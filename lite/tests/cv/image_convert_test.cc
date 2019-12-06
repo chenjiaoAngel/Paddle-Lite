@@ -48,6 +48,12 @@ typedef paddle::lite::Tensor Tensor;
 
 using paddle::lite::Timer;
 
+
+#ifdef USE_OPENCV
+#include "opencv2/opencv.hpp"
+using namespace cv;
+#endif
+
 void fill_tensor_host_rand(uint8_t* dio, int64_t size) {
   uint seed = 256;
   for (int64_t i = 0; i < size; ++i) {
@@ -176,7 +182,47 @@ void test_img(const std::vector<int>& cluster_id,
       }
       uint8_t* src = new uint8_t[size];
       fill_tensor_host_rand(src, size);
-
+#ifdef USE_OPENCV
+      LOG(INFO) << "loading image " << img_name << " ...";
+      cv::Mat img_in = imread(img_name, CV_LOAD_IMAGE_COLOR);
+      if (img_in.empty()) {
+          LOG(FATAL) << "opencv read image " << img_name << " failed";
+      }
+      Timer t_cv;
+      double to1 = 0;
+      LOG(INFO) << "cv resize image ";
+      for (int i = 0; i < test_iter; i++){
+        cv::Mat im;
+        t_cv.clear();
+        t_cv.start();
+        cv::resize(img_in, im, cv::Size(dstw, dsth), 0.f, 0.f);
+        t_cv.end();
+        to1 += t_cv.get_average_ms();
+        LOG(INFO) << "opencv run time iter: " << i << ", " << t_cv.get_average_ms();
+      }
+      LOG(INFO) << "opencv run time: " << to1 << "ms, avg: " << to1 / test_iter;
+      LOG(IINFO) << "------";
+      LOG(INFO) << "lite resize image ";
+      for (int i = 0; i < srcw * srch; i++){
+        src[i * 3] = img_in.at<cv::Vec3b>(r, c)[0];
+        src[i * 3 + 1] = img_in.at<cv::Vec3b>(r, c)[1];
+        src[i * 3 + 2] = img_in.at<cv::Vec3b>(r, c)[2];
+      }
+      uint8_t* dst = new uint8_t[dstw * dsth * 3];
+      Timer t_cv1;
+      double to2 = 0;
+      for (int i = 0; i < test_iter; i++){
+        t_cv1.clear();
+        t_cv1.start();
+        imageResize(src, dst, (ImageFormat)dstFormat, srcw, srch,
+                                     dstw, dsth);
+        t_cv1.end();
+        to2 += t_cv1.get_average_ms();
+        LOG(INFO) << "opencv run time iter: " << i << ", " << t_cv1.get_average_ms();
+      }
+      LOG(INFO) << "lite run time: " << to2 << "ms, avg: " << to2 / test_iter;
+#endif
+#if 0
       int out_size = srch * srcw;
       int resize = dstw * dsth;
       if (dstFormat == ImageFormat::NV12 || dstFormat == ImageFormat::NV21) {
@@ -532,6 +578,7 @@ void test_img(const std::vector<int>& cluster_id,
         CHECK_EQ(rst, true) << "compute result error";
         LOG(INFO) << "iamge to tensor end";
       }
+#endif
     }
   }
 }

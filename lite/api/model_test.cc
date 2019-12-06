@@ -51,7 +51,7 @@ void OutputOptModel(const std::string& load_model_dir,
   lite_api::CxxConfig config;
   config.set_model_dir(load_model_dir);
   config.set_valid_places({
-      Place{TARGET(kX86), PRECISION(kFloat)},
+      // Place{TARGET(kX86), PRECISION(kFloat)},
       Place{TARGET(kARM), PRECISION(kFloat)},
   });
   auto predictor = lite_api::CreatePaddlePredictor(config);
@@ -135,13 +135,13 @@ void Run(const std::vector<std::vector<int64_t>>& input_shapes,
     return;
   }
   std::sort(times.begin(), times.end());
-  int mid = times.size() / 2;
+  int mid = (int)(times.size() / 2);
   int mid1 = mid;
-  if (time.size() % 2 != 0){
+  if (times.size() % 2 != 0){
     mid1 = mid - 1;
   }
   float mid_val = (times[mid] + times[mid1]) / 2.0;
-  fprintf(fp_w, "model: %s, threads: %d, avg: %f ms, min: %f ms, mid_val: %f ms, var: %f \n", model_dir.c_str(), thread_num, avg, ti.get_min_time(), mid_val, sum);
+  fprintf(fp_w, "model: %s, threads: %d, avg: %f ms, min: %f ms, mid: %f ms, var: %f \n", model_dir.c_str(), thread_num, avg, ti.get_min_time(), mid_val, sum);
   fclose(fp_w);
   auto output = predictor->GetOutput(0);
   auto out = output->data<float>();
@@ -159,10 +159,13 @@ void Run(const std::vector<std::vector<int64_t>>& input_shapes,
     printf("open file %s failed \n", FLAGS_out_txt.c_str());
     return;
   }
+  double sum1 = 0.f;
   for (int i = 0; i < output_num; ++i){
     fprintf(fp, "%f\n", out[i]);
+    sum1 += out[i];
   }
   fclose(fp);
+  printf("out mean: %f \n", sum1 / output_num);
 }
 #endif
 
