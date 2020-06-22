@@ -39,6 +39,7 @@ add_operator(unsqueeze_op_lite basic SRCS unsqueeze_op.cc DEPS ${op_DEPS})
 add_operator(stack_op basic SRCS stack_op.cc DEPS ${op_DEPS})
 add_operator(cast_op_lite basic SRCS cast_op.cc DEPS ${op_DEPS})
 add_operator(affine_channel_op basic SRCS affine_channel_op.cc DEPS ${op_DEPS})
+add_operator(affine_grid_op basic SRCS affine_grid_op.cc DEPS ${op_DEPS})
 add_operator(range_op basic SRCS range_op.cc DEPS ${op_DEPS})
 add_operator(reduce_mean_op basic SRCS reduce_mean_op.cc DEPS ${op_DEPS})
 add_operator(relu_op basic SRCS relu_op.cc DEPS ${op_DEPS})
@@ -111,6 +112,7 @@ add_operator(distribute_fpn_proposals_op_lite extra SRCS distribute_fpn_proposal
 add_operator(crf_decoding_op_lite extra SRCS crf_decoding_op.cc DEPS ${op_DEPS})
 add_operator(ctc_align_op_lite extra SRCS ctc_align_op.cc DEPS ${op_DEPS})
 add_operator(max_pool_with_index_op extra SRCS max_pool_with_index_op.cc DEPS ${op_DEPS})
+add_operator(pixel_shuffle_op extra SRCS pixel_shuffle_op.cc DEPS ${op_DEPS})
 
 # for OCR specific
 add_operator(while_op extra SRCS while_op.cc DEPS ${op_DEPS})
