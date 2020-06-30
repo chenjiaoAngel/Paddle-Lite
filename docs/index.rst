@@ -47,13 +47,16 @@ Welcome to Paddle-Lite's documentation!
 
   demo_guides/cpp_demo
   demo_guides/java_demo
+  demo_guides/python_demo
   demo_guides/android_app_demo
   demo_guides/ios_app_demo
+  demo_guides/linux_arm_demo
   demo_guides/x86
   demo_guides/cuda
   demo_guides/opencl
   demo_guides/fpga
   demo_guides/npu
+  demo_guides/baidu_xpu
   demo_guides/rockchip_npu
   demo_guides/mediatek_apu
   
