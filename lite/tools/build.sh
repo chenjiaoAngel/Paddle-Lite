@@ -21,7 +21,7 @@ BUILD_DIR=$(pwd)
 OPTMODEL_DIR=""
 BUILD_TAILOR=OFF
 BUILD_CV=OFF
-WITH_LOG=ON
+WITH_LOG=OFF
 WITH_PROFILE=OFF
 BUILD_NPU=OFF
 NPU_DDK_ROOT="$(pwd)/ai_ddk_lib/" # Download HiAI DDK from https://developer.huawei.com/consumer/cn/hiai/
@@ -116,7 +116,7 @@ function make_tiny_publish_so {
   local android_stl=$4
 
   cur_dir=$(pwd)
-  build_dir=$cur_dir/build.lite.${os}.${abi}.${lang}
+  build_dir=$cur_dir/build.lite.${os}.${abi}.${lang}.${android_stl}.with_extra_${BUILD_EXTRA}.with_cv_${BUILD_CV}
   if [ -d $build_dir ]
   then
     rm -rf $build_dir
