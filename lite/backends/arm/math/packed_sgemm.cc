@@ -4125,12 +4125,33 @@ void sgemm_prepacked_6x8_a53(bool is_transB,
 
       float bias_local[6] = {0};
       if (has_bias) {
-        bias_local[0] = bias[y];
+        if ( (y + 5) > M) {
+          switch (M - y) {
+            case 4:
+              bias_local[4] = bias[y + 4];
+            case 3:
+              bias_local[3] = bias[y + 3];
+            case 2:
+              bias_local[2] = bias[y + 2];
+            case 1:
+              bias_local[1] = bias[y + 1];
+            case 0:
+              bias_local[0] = bias[y];
+          }
+        } else {
+          bias_local[0] = bias[y];
+          bias_local[1] = bias[y + 1];
+          bias_local[2] = bias[y + 2];
+          bias_local[3] = bias[y + 3];
+          bias_local[4] = bias[y + 4];
+          bias_local[5] = bias[y + 5];
+       }
+      /*  bias_local[0] = bias[y];
         bias_local[1] = bias[y + 1];
         bias_local[2] = bias[y + 2];
         bias_local[3] = bias[y + 3];
         bias_local[4] = bias[y + 4];
-        bias_local[5] = bias[y + 5];
+        bias_local[5] = bias[y + 5];*/
       }
 
       float cout0[NBLOCK];
