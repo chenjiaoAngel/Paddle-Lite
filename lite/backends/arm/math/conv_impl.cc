@@ -814,8 +814,25 @@ void conv_depthwise_3x3_int8_fp32(const void* din,
       alpha[3] = local_alpha;
     }
   }
+  bool pad_euql = (pad_h == pad_w) && (paddings[0] == paddings[1]) && (paddings[2] == paddings[3]);
   if (stride == 1) {
-    conv_depthwise_3x3s1_int8(reinterpret_cast<float*>(dout),
+    if (pad_euql && paddings[0] == 1 && flag_act < 2) {
+      conv_depthwise_3x3s1p1_int8(reinterpret_cast<float*>(dout),
+				  reinterpret_cast<const int8_t*>(din),
+				  reinterpret_cast<const int8_t*>(weights),
+                                  scale,
+                                  bias,
+				  flag_bias,
+			          flag_act > 0,
+				  num,
+			          ch_in,
+                                  h_in,
+                                  w_in,
+                                  h_out,
+                                  w_out,
+                                  ctx);
+    } else {
+      conv_depthwise_3x3s1_int8(reinterpret_cast<float*>(dout),
                               reinterpret_cast<const int8_t*>(din),
                               reinterpret_cast<const int8_t*>(weights),
                               scale,
@@ -832,7 +849,24 @@ void conv_depthwise_3x3_int8_fp32(const void* din,
                               pad_w,
                               pad_h,
                               ctx);
+    }
   } else if (stride == 2) {
+    if (pad_euql && paddings[0] == 1 && flag_act < 2) {
+       conv_depthwise_3x3s2p1_int8(reinterpret_cast<float*>(dout),
+                                  reinterpret_cast<const int8_t*>(din),
+                                  reinterpret_cast<const int8_t*>(weights),
+                                  scale,
+                                  bias,
+                                  flag_bias,
+                                  flag_act > 0,
+                                  num,
+                                  ch_in,
+                                  h_in,
+                                  w_in,
+                                  h_out,
+                                  w_out,
+                                  ctx);
+    }
     conv_depthwise_3x3s2_int8(reinterpret_cast<float*>(dout),
                               reinterpret_cast<const int8_t*>(din),
                               reinterpret_cast<const int8_t*>(weights),
@@ -897,7 +931,24 @@ void conv_depthwise_3x3_int8_int8(const void* din,
       alpha[3] = local_alpha;
     }
   }
+  bool pad_euql = (pad_h == pad_w) && (paddings[0] == paddings[1]) && (paddings[2] == paddings[3]);
   if (stride == 1) {
+    if (pad_euql && paddings[0] == 1 && flag_act < 2) {
+      conv_depthwise_3x3s1p1_int8(reinterpret_cast<int8_t*>(dout),
+                                  reinterpret_cast<const int8_t*>(din),
+                                  reinterpret_cast<const int8_t*>(weights),
+                                  scale,
+                                  bias,
+                                  flag_bias,
+                                  flag_act > 0,
+                                  num,
+                                  ch_in,
+                                  h_in,
+                                  w_in,
+                                  h_out,
+                                  w_out,
+                                  ctx);
+    } else {
     conv_depthwise_3x3s1_int8(reinterpret_cast<int8_t*>(dout),
                               reinterpret_cast<const int8_t*>(din),
                               reinterpret_cast<const int8_t*>(weights),
@@ -915,7 +966,24 @@ void conv_depthwise_3x3_int8_int8(const void* din,
                               pad_w,
                               pad_h,
                               ctx);
+    }
   } else if (stride == 2) {
+    if (pad_euql && paddings[0] == 1 && flag_act < 2) {
+      conv_depthwise_3x3s2p1_int8(reinterpret_cast<int8_t*>(dout),
+                                  reinterpret_cast<const int8_t*>(din),
+                                  reinterpret_cast<const int8_t*>(weights),
+                                  scale,
+                                  bias,
+                                  flag_bias,
+                                  flag_act > 0,
+                                  num,
+                                  ch_in,
+                                  h_in,
+                                  w_in,
+                                  h_out,
+                                  w_out,
+                                  ctx);
+    } else {
     conv_depthwise_3x3s2_int8(reinterpret_cast<int8_t*>(dout),
                               reinterpret_cast<const int8_t*>(din),
                               reinterpret_cast<const int8_t*>(weights),
@@ -933,6 +1001,7 @@ void conv_depthwise_3x3_int8_int8(const void* din,
                               pad_w,
                               pad_h,
                               ctx);
+    }
   } else {
     LOG(FATAL) << "unsupport this type 3x3 dw conv int8";
   }

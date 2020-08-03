@@ -107,6 +107,22 @@ void conv_depthwise_3x3s1_int8(Dtype* dout,
                                ARMContext* ctx);
 
 template <typename Dtype>
+void conv_depthwise_3x3s1p1_int8(Dtype* dout,
+                               const int8_t* din,
+                               const int8_t* weights,
+                               const float* scale,
+                               const float* bias,
+                               bool flag_bias,
+                               bool flag_act,
+                               int num,
+                               int chin,
+                               int hin,
+                               int win,
+                               int hout,
+                               int wout,
+                               ARMContext* ctx);
+
+template <typename Dtype>
 void conv_depthwise_3x3s2_int8(Dtype* dout,
                                const int8_t* din,
                                const int8_t* weights,
@@ -123,6 +139,22 @@ void conv_depthwise_3x3s2_int8(Dtype* dout,
                                int wout,
                                int padw,
                                int padh,
+                               ARMContext* ctx);
+
+template <typename Dtype>
+void conv_depthwise_3x3s2p1_int8(Dtype* dout,
+                               const int8_t* din,
+                               const int8_t* weights,
+                               const float* scale,
+                               const float* bias,
+                               bool flag_bias,
+                               bool flag_act,
+                               int num,
+                               int chin,
+                               int hin,
+                               int win,
+                               int hout,
+                               int wout,
                                ARMContext* ctx);
 
 void conv_depthwise_5x5s1_fp32(float* dout,
