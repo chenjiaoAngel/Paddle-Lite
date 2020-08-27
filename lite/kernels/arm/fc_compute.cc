@@ -102,6 +102,12 @@ void FcCompute<PRECISION(kFloat), PRECISION(kFloat)>::Run() {
   if (flag_gemm_) {
     operators::ActivationParam act_param;
     act_param.has_active = false;
+#ifdef LITE_WITH_PROFILE
+    kernel_func_name_ = "FC_sgemm_M_" +
+                        std::to_string(m_) +
+                        "_N_" + std::to_string((n_) +
+                        "_K_" + std::to_string(k_);
+#endif
     lite::arm::math::sgemm(false,
                            false,
                            m_,
@@ -127,6 +133,11 @@ void FcCompute<PRECISION(kFloat), PRECISION(kFloat)>::Run() {
     for (int i = 0; i < m_; ++i) {
       auto i_data_batch = i_data + i * k_;
       auto o_data_batch = o_data + i * n_;
+#ifdef LITE_WITH_PROFILE
+      kernel_func_name_ = "FC_sgemm_M_1" +
+                          "_N_" + std::to_string((n_) +
+                          "_K_" + std::to_string(k_);
+#endif
       lite::arm::math::sgemv(w_data,
                              i_data_batch,
                              o_data_batch,

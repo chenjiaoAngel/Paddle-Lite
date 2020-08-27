@@ -113,6 +113,13 @@ class FcCompute : public KernelLite<TARGET(kARM), PType> {
   virtual void PrepareForRun();
   virtual void Run();
 
+#ifdef LITE_WITH_PROFILE
+  virtual void SetProfileRuntimeKernelInfo(
+      paddle::lite::profile::OpCharacter* ch) {
+    ch->kernel_func_name = kernel_func_name_;
+  }
+  std::string kernel_func_name_{"NotImplForFC"};
+#endif
   ~FcCompute() = default;
 
  private:

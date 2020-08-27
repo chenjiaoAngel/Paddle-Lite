@@ -98,7 +98,15 @@ void GRUCompute::Run() {
   size_t seq_len = batch_starts.size() - 1;
   auto active_node = get_gru_act_type(param.activation);
   auto active_gate = get_gru_act_type(param.gate_activation);
-
+#ifdef LITE_WITH_PROFILE
+  auto cur_batch_size_tmp = static_cast<int>(batch_starts[1]) -
+                            static_cast<int>(batch_starts[0]);
+  kernel_func_name_ = "GRU_seq_len_" +
+                      std::to_string(seq_len) +
+                      "_M_" + std::to_string(cur_batch_size_tmp) +
+                      "_N_" + std::to_string(frame_size) +
+                      "_K_" + std::to_string(frame_size);
+#endif
   for (size_t n = 0; n < seq_len; n++) {
     int bstart = static_cast<int>(batch_starts[n]);
     int bend = static_cast<int>(batch_starts[n + 1]);
