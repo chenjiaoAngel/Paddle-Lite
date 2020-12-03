@@ -13,18 +13,39 @@
 // limitations under the License.
 
 #pragma once
+<<<<<<< HEAD
 #include <stdint.h>
 #include <vector>
 #include "lite/utils/cv/cv_enum.h"
+=======
+
+#include <stdint.h>
+#include <vector>
+#include "lite/utils/cv/paddle_image_preprocess.h"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 namespace paddle {
 namespace lite {
 namespace utils {
 namespace cv {
+<<<<<<< HEAD
 typedef paddle::lite::utils::cv::FlipParam FlipParam;
 void flip_hwc1(
     const uint8_t* src, uint8_t* dst, int srcw, int srch, FlipParam flip_param);
 void flip_hwc2(
     const uint8_t* src, uint8_t* dst, int srcw, int srch, FlipParam flip_param);
+=======
+class ImageFlip {
+ public:
+  void choose(const uint8_t* src,
+              uint8_t* dst,
+              ImageFormat srcFormat,
+              int srcw,
+              int srch,
+              FlipParam flip_param);
+};
+void flip_hwc1(
+    const uint8_t* src, uint8_t* dst, int srcw, int srch, FlipParam flip_param);
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 void flip_hwc3(
     const uint8_t* src, uint8_t* dst, int srcw, int srch, FlipParam flip_param);
 void flip_hwc4(

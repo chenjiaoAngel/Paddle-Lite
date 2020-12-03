@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "lite/kernels/arm/scale_compute.h"
 #include <gtest/gtest.h>
+
 #include <vector>
+
 #include "lite/core/op_registry.h"
+#include "lite/kernels/arm/scale_compute.h"
 
 namespace paddle {
 namespace lite {
@@ -41,13 +43,13 @@ void scale_compute_ref(const operators::ScaleParam& param) {
 }
 
 TEST(scale_arm, init) {
-  ScaleCompute scale;
+  ScaleCompute<float, PRECISION(kFloat)> scale;
   ASSERT_EQ(scale.precision(), PRECISION(kFloat));
   ASSERT_EQ(scale.target(), TARGET(kARM));
 }
 
 TEST(scale_arm, compute) {
-  ScaleCompute scale;
+  ScaleCompute<float, PRECISION(kFloat)> scale;
   operators::ScaleParam param;
 
   lite::Tensor x;
@@ -103,8 +105,7 @@ TEST(scale_arm, compute) {
 }
 
 TEST(scale, retrive_op) {
-  auto scale =
-      KernelRegistry::Global().Create<TARGET(kARM), PRECISION(kFloat)>("scale");
+  auto scale = KernelRegistry::Global().Create("scale");
   ASSERT_FALSE(scale.empty());
   ASSERT_TRUE(scale.front());
 }

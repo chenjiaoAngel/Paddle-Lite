@@ -13,6 +13,10 @@
 // limitations under the License.
 
 #pragma once
+<<<<<<< HEAD
+=======
+
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 #include "lite/core/kernel.h"
 #include "lite/core/op_registry.h"
 
@@ -20,14 +24,20 @@ namespace paddle {
 namespace lite {
 namespace kernels {
 namespace arm {
+<<<<<<< HEAD
 
 class NCHWToNHWCCompute : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+=======
+template <PrecisionType Ptype>
+class NCHWToNHWCCompute : public KernelLite<TARGET(kARM), Ptype> {
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
  public:
   using param_t = operators::LayoutParam;
   void Run() override;
   virtual ~NCHWToNHWCCompute() = default;
 };
 
+<<<<<<< HEAD
 class NCHWToNHWCComputeInt8
     : public KernelLite<TARGET(kARM), PRECISION(kInt8)> {
  public:
@@ -37,12 +47,17 @@ class NCHWToNHWCComputeInt8
 };
 
 class NHWCToNCHWCompute : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+=======
+template <PrecisionType Ptype>
+class NHWCToNCHWCompute : public KernelLite<TARGET(kARM), Ptype> {
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
  public:
   using param_t = operators::LayoutParam;
   void Run() override;
   virtual ~NHWCToNCHWCompute() = default;
 };
 
+<<<<<<< HEAD
 class NHWCToNCHWComputeInt8
     : public KernelLite<TARGET(kARM), PRECISION(kInt8)> {
  public:
@@ -51,6 +66,8 @@ class NHWCToNCHWComputeInt8
   virtual ~NHWCToNCHWComputeInt8() = default;
 };
 
+=======
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }  // namespace arm
 }  // namespace kernels
 }  // namespace lite

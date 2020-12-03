@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "lite/kernels/x86/conv_compute.h"
 #include <gtest/gtest.h>
+
 #include <memory>
 #include <utility>
 #include <vector>
+
 #include "lite/core/op_registry.h"
+#include "lite/kernels/x86/conv_compute.h"
 
 namespace paddle {
 namespace lite {
@@ -25,9 +27,7 @@ namespace kernels {
 namespace x86 {
 
 TEST(conv_x86, retrive_op) {
-  auto conv2d =
-      KernelRegistry::Global().Create<TARGET(kX86), PRECISION(kFloat)>(
-          "conv2d");
+  auto conv2d = KernelRegistry::Global().Create("conv2d");
   ASSERT_FALSE(conv2d.empty());
   ASSERT_TRUE(conv2d.front());
 }
@@ -73,9 +73,11 @@ TEST(conv2d_x86, run_test) {
   param.bias = &b;
   param.output = &out;
   param.strides = {1, 1};
-  param.paddings = {0, 0};
+  std::vector<int> paddings = {0, 0, 0, 0};
   param.groups = 1;
-  param.dilations = {1, 1};
+  std::vector<int> dilations = {1, 1};
+  param.paddings = std::make_shared<std::vector<int>>(paddings);
+  param.dilations = std::make_shared<std::vector<int>>(dilations);
   LOG(INFO) << 123;
   std::unique_ptr<KernelContext> ctx(new KernelContext);
   ctx->As<X86Context>();

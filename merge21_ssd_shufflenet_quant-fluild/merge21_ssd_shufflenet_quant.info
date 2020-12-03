@@ -1,0 +1,407 @@
+Version: 110
+Tensor_number 218
+transpose2#518(transpose_22)_flatten2#519(flatten_6) fp32 1 4 1 2 2 24 2 1 2544 0 null
+conv2d#508(conv2d_61)_transpose2#511(transpose_21) fp32 1 4 1 12 4 4 3 1 2 384 0 null
+depthwise_conv2d#438(depthwise_conv2d_19)_conv2d#443(conv2d_52) int8 0.107447683811 4 1 48 2 2 4 1 1 200 7 0 null
+transpose2#482(transpose_16)_flatten2#483(flatten_0) fp32 1 4 1 16 16 12 3 1 2 5088 0 null
+transpose2#506(transpose_20)_flatten2#507(flatten_4) fp32 1 4 1 4 4 24 3 1 1272 2 0 null
+conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1) int8 0.287953823805 4 1 24 64 64 4 1 24 64 64 0 null
+pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0) fp32 1 4 1 24 64 64 4 1 24 64 64 0 null
+conv2d#3(conv2d_0)_pool2d#7(pool2d_0) fp32 1 4 1 24 128 128 4 1 24 128 128 0 null
+image_split#0#image fp32 1 4 1 3 256 256 4 1 3 256 256 0 null
+conv2d#419(conv2d_50)_conv2d#424(conv2d_51) int8 0.306832611561 4 1 48 16 16 4 1 48 16 16 0 null
+conv2d#496(conv2d_59)_transpose2#499(transpose_19) fp32 1 4 1 12 8 8 3 1 2 1536 0 null
+conv2d#383(conv2d_46)_conv2d#388(conv2d_47) int8 0.148273289204 4 1 48 4 4 4 1 48 8 8 0 null
+transpose2#494(transpose_18)_flatten2#495(flatten_2) fp32 1 4 1 8 8 24 3 1 2 3072 0 null
+conv2d#520(conv2d_63)_transpose2#523(transpose_23) fp32 1 4 1 12 2 2 3 1 2 96 0 null
+flatten2#524(flatten_7)_concat#537(concat_19) fp32 1 2 1 48 2 1 48 1 depthwise_conv2d#438(depthwise_conv2d_19)_conv2d#443(conv2d_52)
+flatten2#519(flatten_6)_concat#535(concat_18) fp32 1 2 1 96 2 1 96 1 transpose2#518(transpose_22)_flatten2#519(flatten_6)
+transpose2#523(transpose_23)_flatten2#524(flatten_7) fp32 1 4 1 2 2 12 4 1 2 2 12 1 depthwise_conv2d#438(depthwise_conv2d_19)_conv2d#443(conv2d_52)
+conv2d#515(conv2d_62)_transpose2#518(transpose_22) fp32 1 4 1 24 2 2 4 1 24 2 2 1 depthwise_conv2d#438(depthwise_conv2d_19)_conv2d#443(conv2d_52)
+flatten2#512(flatten_5)_concat#537(concat_19) fp32 1 2 1 192 2 1 192 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+split#0#relu#446(batch_norm_72)_conv2d#520(conv2d_63) fp32 0.0593100190163 4 1 48 2 2 4 1 48 2 2 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+split#0#relu#446(batch_norm_72)_prior_box#513(prior_box_3) fp32 1 4 1 48 2 2 4 1 48 2 2 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+transpose2#511(transpose_21)_flatten2#512(flatten_5) fp32 1 4 1 4 4 12 4 1 4 4 12 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+conv2d#396(fpn_topdown_block3_sep_conv)_elementwise_add#400(tmp_0) fp32 1 4 1 48 4 4 4 1 48 4 4 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+depthwise_conv2d#219(depthwise_conv2d_12)_conv2d#223(conv2d_24) int8 0.286942869425 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+depthwise_conv2d#181(depthwise_conv2d_10)_conv2d#185(conv2d_20) int8 0.359989434481 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+multiclass_nms#542(detection_output_0)_scale#543(save_infer_model_scale_0) fp32 1 4 1 1 200 7 4 1 1 200 7 1 depthwise_conv2d#438(depthwise_conv2d_19)_conv2d#443(conv2d_52)
+conv2d#214(conv2d_23)_depthwise_conv2d#219(depthwise_conv2d_12) int8 0.15839971602 4 1 48 16 16 4 1 48 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+concat#227(concat_10)_transpose2#229(transpose_10) fp32 1 4 1 96 16 16 4 1 96 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+flatten2#488(flatten_1)_concat#537(concat_19) fp32 1 2 1 1536 2 1 1536 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#212(split_8)_conv2d#214(conv2d_23) fp32 0.157287269831 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+conv2d#74(conv2d_8)_depthwise_conv2d#79(depthwise_conv2d_4) int8 0.0708530023694 4 1 24 32 32 4 1 24 32 32 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+conv2d#503(conv2d_60)_transpose2#506(transpose_20) fp32 1 4 1 24 4 4 4 1 24 4 4 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+transpose2#274(transpose_12)_split#276(split_10) fp32 1 4 1 192 8 8 4 1 192 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+conv2d#432(fpn_topdown_block1_sep_conv)_elementwise_add#436(tmp_2) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#0#relu#382(batch_norm_64)_depthwise_conv2d#438(depthwise_conv2d_19) fp32 0.0853352919221 4 1 48 2 2 4 1 48 2 2 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+split#193(split_7)_concat#208(concat_9) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+elementwise_add#400(tmp_0)_split#0#elementwise_add#400(tmp_0) fp32 1 4 1 48 4 4 4 1 48 4 4 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+conv2d#166(conv2d_18)_concat#170(concat_7) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#174(split_6)_conv2d#176(conv2d_19) fp32 0.168047219515 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#0#elementwise_add#418(tmp_1)_conv2d_transpose#428(fpn_topdown_block1_dw_deconv) fp32 1 4 1 48 8 8 4 1 48 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#231(split_9)_concat#246(concat_11) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#314(split_12)_concat#329(concat_15) fp32 1 4 1 96 8 8 4 1 96 8 8 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+transpose2#172(transpose_7)_split#174(split_6) fp32 1 4 1 96 16 16 4 1 96 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#155(split_5)_concat#170(concat_7) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+depthwise_conv2d#143(depthwise_conv2d_8)_conv2d#147(conv2d_16) int8 0.294568806887 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#117(split_3)_concat#132(concat_5) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+conv2d#128(conv2d_14)_concat#132(concat_5) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#136(split_4)_conv2d#138(conv2d_15) fp32 0.177356138825 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#136(split_4)_concat#151(concat_6) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+depthwise_conv2d#124(depthwise_conv2d_7)_conv2d#128(conv2d_14) int8 0.342175096273 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+conv2d#119(conv2d_13)_depthwise_conv2d#124(depthwise_conv2d_7) int8 0.153791323304 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+transpose2#115(transpose_4)_split#117(split_3) fp32 1 4 1 96 16 16 4 1 96 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#109(conv2d_12)_concat#113(concat_4) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+transpose2#487(transpose_17)_flatten2#488(flatten_1) fp32 1 4 1 16 16 6 4 1 16 16 6 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+conv2d#195(conv2d_21)_depthwise_conv2d#200(depthwise_conv2d_11) int8 0.131251618266 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#0#relu#476(batch_norm_78)_conv2d#484(conv2d_57) fp32 0.254908889532 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#0#image_conv2d#3(conv2d_0) fp32 0.00787387788296 4 1 3 256 256 4 1 3 256 256 1 image_split#0#image
+conv2d#424(conv2d_51)_elementwise_add#436(tmp_2) fp32 1 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+conv2d#204(conv2d_22)_concat#208(concat_9) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#147(conv2d_16)_concat#151(concat_6) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+conv2d#185(conv2d_20)_concat#189(concat_8) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+conv2d#223(conv2d_24)_concat#227(concat_10) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+conv2d#138(conv2d_15)_depthwise_conv2d#143(depthwise_conv2d_8) int8 0.133327484131 4 1 48 16 16 4 1 48 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+concat#30(concat_0)_transpose2#32(transpose_0) fp32 1 4 1 48 32 32 4 1 48 32 32 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#314(split_12)_conv2d#316(conv2d_34) fp32 0.196964278817 4 1 96 8 8 4 1 96 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#83(conv2d_9)_concat#87(concat_3) fp32 1 4 1 24 32 32 4 1 24 32 32 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+conv2d#100(conv2d_11)_depthwise_conv2d#105(depthwise_conv2d_6) int8 0.115972973406 4 1 48 32 32 4 1 48 32 32 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+depthwise_conv2d#251(depthwise_conv2d_14)_conv2d#255(conv2d_27) int8 0.396815955639 4 1 96 8 8 4 1 96 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+depthwise_conv2d#22(depthwise_conv2d_1)_conv2d#26(conv2d_3) int8 0.392502903938 4 1 24 32 32 4 1 24 32 32 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+prior_box#477(prior_box_0)_concat#533(concat_16) fp32 1 3 1 2 3072 3 1 2 3072 1 transpose2#494(transpose_18)_flatten2#495(flatten_2)
+conv2d#306(conv2d_33)_concat#310(concat_14) fp32 1 4 1 96 8 8 4 1 96 8 8 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+transpose2#331(transpose_15)_split#0#reshape2#332(reshape2_31) fp32 1 4 1 192 8 8 4 1 192 8 8 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+conv2d#349(conv2d_39)_split#0#relu#352(batch_norm_58) fp32 1 4 1 96 4 4 4 1 96 4 4 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+prior_box#489(prior_box_1)_concat#533(concat_16) fp32 1 3 1 2 1536 3 1 2 1536 1 conv2d#496(conv2d_59)_transpose2#499(transpose_19)
+transpose2#32(transpose_0)_split#34(split_0) fp32 1 4 1 48 32 32 4 1 48 32 32 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+conv2d#55(conv2d_6)_depthwise_conv2d#60(depthwise_conv2d_3) int8 0.344173997641 4 1 24 32 32 4 1 24 32 32 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#0#reshape2#332(reshape2_31)_conv2d#401(conv2d_48) fp32 0.163050174713 4 1 192 8 8 4 1 192 8 8 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+split#0#relu#456(batch_norm_74)_conv2d#508(conv2d_61) fp32 0.0481875278056 4 1 48 4 4 4 1 48 4 4 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#0#image_prior_box#513(prior_box_3) fp32 1 4 1 3 256 256 4 1 3 256 256 1 image_split#0#image
+concat#189(concat_8)_transpose2#191(transpose_8) fp32 1 4 1 96 16 16 4 1 96 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+conv2d#463(conv2d_54)_split#0#relu#466(batch_norm_76) fp32 1 4 1 48 8 8 4 1 48 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#212(split_8)_concat#227(concat_10) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#53(split_1)_conv2d#55(conv2d_6) fp32 0.255761444569 4 1 24 32 32 4 1 24 32 32 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#0#image_prior_box#501(prior_box_2) fp32 1 4 1 3 256 256 4 1 3 256 256 1 image_split#0#image
+transpose2#248(transpose_11)_split#0#reshape2#249(reshape2_23) fp32 1 4 1 96 16 16 4 1 96 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+scale#543(save_infer_model_scale_0)_save_infer_model_scale_0 fp32 1 4 1 1 200 7 4 1 1 200 7 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+split#0#pool2d#7(pool2d_0)_conv2d#17(conv2d_2) fp32 1.53864395618 4 1 24 64 64 4 1 24 64 64 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#0#relu#456(batch_norm_74)_conv2d#503(conv2d_60) fp32 0.0481875278056 4 1 48 4 4 4 1 48 4 4 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#176(conv2d_19)_depthwise_conv2d#181(depthwise_conv2d_10) int8 0.1611109972 4 1 48 16 16 4 1 48 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#0#relu#382(batch_norm_64)_conv2d_transpose#392(fpn_topdown_block3_dw_deconv) fp32 1 4 1 48 2 2 4 1 48 2 2 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+transpose2#70(transpose_2)_split#72(split_2) fp32 1 4 1 48 32 32 4 1 48 32 32 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+conv2d#325(conv2d_35)_concat#329(concat_15) fp32 1 4 1 96 8 8 4 1 96 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#193(split_7)_conv2d#195(conv2d_21) fp32 0.185590714216 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+conv2d#297(conv2d_32)_depthwise_conv2d#302(depthwise_conv2d_17) int8 0.130665838718 4 1 96 8 8 4 1 96 8 8 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+split#174(split_6)_concat#189(concat_8) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#26(conv2d_3)_concat#30(concat_0) fp32 1 4 1 24 32 32 4 1 24 32 32 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+concat#87(concat_3)_transpose2#89(transpose_3) fp32 1 4 1 48 32 32 4 1 48 32 32 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+prior_box#513(prior_box_3)_concat#533(concat_16) fp32 1 3 1 2 96 3 1 2 96 1 conv2d#520(conv2d_63)_transpose2#523(transpose_23)
+conv2d_transpose#392(fpn_topdown_block3_dw_deconv)_conv2d#396(fpn_topdown_block3_sep_conv) fp32 0.0533743575215 4 1 48 4 4 4 1 48 4 4 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+split#0#pool2d#7(pool2d_0)_depthwise_conv2d#9(depthwise_conv2d_0) fp32 1.53864395618 4 1 24 64 64 4 1 24 64 64 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#0#image_prior_box#489(prior_box_1) fp32 1 4 1 3 256 256 4 1 3 256 256 1 image_split#0#image
+transpose2#134(transpose_5)_split#136(split_4) fp32 1 4 1 96 16 16 4 1 96 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#117(split_3)_conv2d#119(conv2d_13) fp32 0.164385989308 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#0#reshape2#90(reshape2_7)_conv2d#100(conv2d_11) fp32 0.243372172117 4 1 48 32 32 4 1 48 32 32 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+depthwise_conv2d#302(depthwise_conv2d_17)_conv2d#306(conv2d_33) int8 0.353135198355 4 1 96 8 8 4 1 96 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+concat#49(concat_1)_transpose2#51(transpose_1) fp32 1 4 1 48 32 32 4 1 48 32 32 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+conv2d#64(conv2d_7)_concat#68(concat_2) fp32 1 4 1 24 32 32 4 1 24 32 32 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#34(split_0)_concat#49(concat_1) fp32 1 4 1 24 32 32 4 1 24 32 32 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#287(conv2d_31)_concat#291(concat_13) fp32 1 4 1 96 8 8 4 1 96 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+concat#151(concat_6)_transpose2#153(transpose_6) fp32 1 4 1 96 16 16 4 1 96 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#0#image_prior_box#477(prior_box_0) fp32 1 4 1 3 256 256 4 1 3 256 256 1 image_split#0#image
+split#53(split_1)_concat#68(concat_2) fp32 1 4 1 24 32 32 4 1 24 32 32 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+depthwise_conv2d#60(depthwise_conv2d_3)_conv2d#64(conv2d_7) int8 0.428651660681 4 1 24 32 32 4 1 24 32 32 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+conv2d#374(conv2d_44)_conv2d#379(conv2d_45) int8 0.126402378082 4 1 48 2 2 4 1 48 2 2 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+split#0#relu#466(batch_norm_76)_prior_box#489(prior_box_1) fp32 1 4 1 48 8 8 4 1 48 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+prior_box#501(prior_box_2)_concat#533(concat_16) fp32 1 3 1 2 384 3 1 2 384 1 conv2d#508(conv2d_61)_transpose2#511(transpose_21)
+depthwise_conv2d#41(depthwise_conv2d_2)_conv2d#45(conv2d_5) int8 0.531099736691 4 1 24 32 32 4 1 24 32 32 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+concat#533(concat_16)_multiclass_nms#542(detection_output_0) fp32 1 3 1 2 5088 3 1 2 5088 1 transpose2#482(transpose_16)_flatten2#483(flatten_0)
+split#0#reshape2#249(reshape2_23)_conv2d#419(conv2d_50) fp32 0.153611436486 4 1 96 16 16 4 1 96 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+depthwise_conv2d#200(depthwise_conv2d_11)_conv2d#204(conv2d_22) int8 0.362483143806 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+depthwise_conv2d#92(depthwise_conv2d_5)_conv2d#96(conv2d_10) int8 0.2354747504 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+flatten2#500(flatten_3)_concat#537(concat_19) fp32 1 2 1 768 2 1 768 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+conv2d#157(conv2d_17)_depthwise_conv2d#162(depthwise_conv2d_9) int8 0.13273973763 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+transpose2#229(transpose_10)_split#231(split_9) fp32 1 4 1 96 16 16 4 1 96 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+transpose2#51(transpose_1)_split#53(split_1) fp32 1 4 1 48 32 32 4 1 48 32 32 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#45(conv2d_5)_concat#49(concat_1) fp32 1 4 1 24 32 32 4 1 24 32 32 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+conv2d#96(conv2d_10)_concat#113(concat_4) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+concat#132(concat_5)_transpose2#134(transpose_5) fp32 1 4 1 96 16 16 4 1 96 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#0#reshape2#249(reshape2_23)_depthwise_conv2d#251(depthwise_conv2d_14) fp32 0.153611436486 4 1 96 16 16 4 1 96 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#72(split_2)_concat#87(concat_3) fp32 1 4 1 24 32 32 4 1 24 32 32 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#155(split_5)_conv2d#157(conv2d_17) fp32 0.32967466116 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#72(split_2)_conv2d#74(conv2d_8) fp32 0.143360331655 4 1 24 32 32 4 1 24 32 32 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+depthwise_conv2d#105(depthwise_conv2d_6)_conv2d#109(conv2d_12) int8 0.487257987261 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#0#reshape2#90(reshape2_7)_depthwise_conv2d#92(depthwise_conv2d_5) fp32 0.243372172117 4 1 48 32 32 4 1 48 32 32 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#0#relu#476(batch_norm_78)_prior_box#477(prior_box_0) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#231(split_9)_conv2d#233(conv2d_25) fp32 0.203562125564 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+concat#246(concat_11)_transpose2#248(transpose_11) fp32 1 4 1 96 16 16 4 1 96 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+elementwise_add#436(tmp_2)_depthwise_conv2d#468(depthwise_conv2d_22) fp32 0.158659398556 4 1 48 16 16 4 1 48 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+depthwise_conv2d#238(depthwise_conv2d_13)_conv2d#242(conv2d_26) int8 0.374938219786 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#0#reshape2#249(reshape2_23)_conv2d#259(conv2d_28) fp32 0.153611436486 4 1 96 16 16 4 1 96 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+concat#535(concat_18)_reshape2#536(reshape2_32) fp32 1 2 1 5088 2 1 5088 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#276(split_10)_concat#291(concat_13) fp32 1 4 1 96 8 8 4 1 96 8 8 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+conv2d#259(conv2d_28)_depthwise_conv2d#264(depthwise_conv2d_15) int8 0.129327610135 4 1 96 16 16 4 1 96 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#0#relu#466(batch_norm_76)_conv2d#496(conv2d_59) fp32 0.249780625105 4 1 48 8 8 4 1 48 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+depthwise_conv2d#264(depthwise_conv2d_15)_conv2d#268(conv2d_29) int8 0.865857183933 4 1 96 8 8 4 1 96 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+concat#272(concat_12)_transpose2#274(transpose_12) fp32 1 4 1 192 8 8 4 1 192 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+depthwise_conv2d#468(depthwise_conv2d_22)_conv2d#473(conv2d_55) int8 0.557445466518 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+flatten2#507(flatten_4)_concat#535(concat_18) fp32 1 2 1 384 2 1 384 1 transpose2#506(transpose_20)_flatten2#507(flatten_4)
+transpose2#312(transpose_14)_split#314(split_12) fp32 1 4 1 192 8 8 4 1 192 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+concat#291(concat_13)_transpose2#293(transpose_13) fp32 1 4 1 192 8 8 4 1 192 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#0#relu#476(batch_norm_78)_conv2d#479(conv2d_56) fp32 0.254908889532 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+depthwise_conv2d#283(depthwise_conv2d_16)_conv2d#287(conv2d_31) int8 0.331612944603 4 1 96 8 8 4 1 96 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+concat#68(concat_2)_transpose2#70(transpose_2) fp32 1 4 1 48 32 32 4 1 48 32 32 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+conv2d#479(conv2d_56)_transpose2#482(transpose_16) fp32 1 4 1 12 16 16 4 1 12 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#276(split_10)_conv2d#278(conv2d_30) fp32 0.256947487593 4 1 96 8 8 4 1 96 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#484(conv2d_57)_transpose2#487(transpose_17) fp32 1 4 1 6 16 16 4 1 6 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+depthwise_conv2d#9(depthwise_conv2d_0)_conv2d#13(conv2d_1) int8 0.686296761036 4 1 24 32 32 4 1 24 32 32 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#0#elementwise_add#400(tmp_0)_conv2d_transpose#410(fpn_topdown_block2_dw_deconv) fp32 1 4 1 48 4 4 4 1 48 4 4 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+conv2d#255(conv2d_27)_concat#272(concat_12) fp32 1 4 1 96 8 8 4 1 96 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#295(split_11)_concat#310(concat_14) fp32 1 4 1 96 8 8 4 1 96 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+transpose2#89(transpose_3)_split#0#reshape2#90(reshape2_7) fp32 1 4 1 48 32 32 4 1 48 32 32 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#295(split_11)_conv2d#297(conv2d_32) fp32 0.206742972136 4 1 96 8 8 4 1 96 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+concat#208(concat_9)_transpose2#210(transpose_9) fp32 1 4 1 96 16 16 4 1 96 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+transpose2#153(transpose_6)_split#155(split_5) fp32 1 4 1 96 16 16 4 1 96 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#0#reshape2#332(reshape2_31)_conv2d#334(conv2d_36) fp32 0.163050174713 4 1 192 8 8 4 1 192 8 8 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+flatten2#483(flatten_0)_concat#535(concat_18) fp32 1 2 1 3072 2 1 3072 1 transpose2#482(transpose_16)_flatten2#483(flatten_0)
+reshape2#536(reshape2_32)_multiclass_nms#542(detection_output_0) fp32 1 3 1 1272 4 3 1 1272 4 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+reshape2#538(reshape2_33)_softmax#540(softmax_0) fp32 1 3 1 1272 2 3 1 1272 2 1 transpose2#518(transpose_22)_flatten2#519(flatten_6)
+concat#329(concat_15)_transpose2#331(transpose_15) fp32 1 4 1 192 8 8 4 1 192 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#316(conv2d_34)_depthwise_conv2d#321(depthwise_conv2d_18) int8 0.14257773757 4 1 96 8 8 4 1 96 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+softmax#540(softmax_0)_multiclass_nms#542(detection_output_0) fp32 1 3 1 1272 2 3 1 1272 2 1 transpose2#506(transpose_20)_flatten2#507(flatten_4)
+depthwise_conv2d#321(depthwise_conv2d_18)_conv2d#325(conv2d_35) int8 0.424119889736 4 1 96 8 8 4 1 96 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#334(conv2d_36)_conv2d#339(conv2d_37) int8 0.310376316309 4 1 48 8 8 4 1 48 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+conv2d#242(conv2d_26)_concat#246(concat_11) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#401(conv2d_48)_conv2d#406(conv2d_49) int8 0.300679773092 4 1 48 8 8 4 1 48 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#339(conv2d_37)_conv2d#344(conv2d_38) int8 0.206942528486 4 1 48 8 8 4 1 48 8 8 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+transpose2#191(transpose_8)_split#193(split_7) fp32 1 4 1 96 16 16 4 1 96 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#406(conv2d_49)_elementwise_add#418(tmp_1) fp32 1 4 1 48 8 8 4 1 48 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+split#0#elementwise_add#400(tmp_0)_depthwise_conv2d#448(depthwise_conv2d_20) fp32 0.215545877814 4 1 48 4 4 4 1 48 4 4 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+conv2d#344(conv2d_38)_conv2d#349(conv2d_39) int8 0.268634706736 4 1 96 4 4 4 1 96 4 4 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+transpose2#210(transpose_9)_split#212(split_8) fp32 1 4 1 96 16 16 4 1 96 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+elementwise_add#418(tmp_1)_split#0#elementwise_add#418(tmp_1) fp32 1 4 1 48 8 8 4 1 48 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#0#elementwise_add#418(tmp_1)_depthwise_conv2d#458(depthwise_conv2d_21) fp32 0.237453117967 4 1 48 8 8 4 1 48 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#443(conv2d_52)_split#0#relu#446(batch_norm_72) fp32 1 4 1 48 2 2 4 1 48 2 2 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+split#0#relu#352(batch_norm_58)_conv2d#354(conv2d_40) fp32 0.164665967226 4 1 96 4 4 4 1 96 4 4 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+conv2d#13(conv2d_1)_concat#30(concat_0) fp32 1 4 1 24 32 32 4 1 24 32 32 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#0#relu#352(batch_norm_58)_conv2d#383(conv2d_46) fp32 0.164665967226 4 1 96 4 4 4 1 96 4 4 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+conv2d_transpose#428(fpn_topdown_block1_dw_deconv)_conv2d#432(fpn_topdown_block1_sep_conv) fp32 0.203360468149 4 1 48 16 16 4 1 48 16 16 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+depthwise_conv2d#458(depthwise_conv2d_21)_conv2d#463(conv2d_54) int8 0.992577731609 4 1 48 8 8 4 1 48 8 8 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+conv2d#473(conv2d_55)_split#0#relu#476(batch_norm_78) fp32 1 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+concat#310(concat_14)_transpose2#312(transpose_14) fp32 1 4 1 192 8 8 4 1 192 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#388(conv2d_47)_elementwise_add#400(tmp_0) fp32 1 4 1 48 4 4 4 1 48 4 4 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#0#relu#466(batch_norm_76)_conv2d#491(conv2d_58) fp32 0.249780625105 4 1 48 8 8 4 1 48 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+conv2d#359(conv2d_41)_conv2d#364(conv2d_42) int8 0.121642619371 4 1 48 4 4 4 1 48 4 4 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+transpose2#499(transpose_19)_flatten2#500(flatten_3) fp32 1 4 1 8 8 12 4 1 8 8 12 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+split#0#relu#446(batch_norm_72)_conv2d#515(conv2d_62) fp32 0.0593100190163 4 1 48 2 2 4 1 48 2 2 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+conv2d#278(conv2d_30)_depthwise_conv2d#283(depthwise_conv2d_16) int8 0.143039733171 4 1 96 8 8 4 1 96 8 8 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+concat#113(concat_4)_transpose2#115(transpose_4) fp32 1 4 1 96 16 16 4 1 96 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+split#34(split_0)_conv2d#36(conv2d_4) fp32 0.266828358173 4 1 24 32 32 4 1 24 32 32 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+conv2d#364(conv2d_42)_conv2d#369(conv2d_43) int8 0.120988450944 4 1 96 2 2 4 1 96 2 2 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+transpose2#293(transpose_13)_split#295(split_11) fp32 1 4 1 192 8 8 4 1 192 8 8 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+concat#537(concat_19)_reshape2#538(reshape2_33) fp32 1 2 1 2544 2 1 2544 1 transpose2#518(transpose_22)_flatten2#519(flatten_6)
+conv2d#491(conv2d_58)_transpose2#494(transpose_18) fp32 1 4 1 24 8 8 4 1 24 8 8 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+concat#170(concat_7)_transpose2#172(transpose_7) fp32 1 4 1 96 16 16 4 1 96 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+conv2d#369(conv2d_43)_conv2d#374(conv2d_44) int8 0.10606507957 4 1 96 2 2 4 1 96 2 2 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+conv2d#354(conv2d_40)_conv2d#359(conv2d_41) int8 0.180094286799 4 1 48 4 4 4 1 48 4 4 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d_transpose#410(fpn_topdown_block2_dw_deconv)_conv2d#414(fpn_topdown_block2_sep_conv) fp32 0.178457096219 4 1 48 8 8 4 1 48 8 8 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+conv2d#268(conv2d_29)_concat#272(concat_12) fp32 1 4 1 96 8 8 4 1 96 8 8 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+conv2d#233(conv2d_25)_depthwise_conv2d#238(depthwise_conv2d_13) int8 0.185276836157 4 1 48 16 16 4 1 48 16 16 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+depthwise_conv2d#448(depthwise_conv2d_20)_conv2d#453(conv2d_53) int8 0.585494160652 4 1 48 4 4 4 1 48 4 4 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+conv2d#414(fpn_topdown_block2_sep_conv)_elementwise_add#418(tmp_1) fp32 1 4 1 48 8 8 4 1 48 8 8 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47)
+flatten2#495(flatten_2)_concat#535(concat_18) fp32 1 2 1 1536 2 1 1536 1 transpose2#494(transpose_18)_flatten2#495(flatten_2)
+conv2d#379(conv2d_45)_split#0#relu#382(batch_norm_64) fp32 1 4 1 48 2 2 4 1 48 2 2 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51)
+depthwise_conv2d#162(depthwise_conv2d_9)_conv2d#166(conv2d_18) int8 0.491641014814 4 1 48 16 16 4 1 48 16 16 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+depthwise_conv2d#79(depthwise_conv2d_4)_conv2d#83(conv2d_9) int8 0.141407355666 4 1 24 32 32 4 1 24 32 32 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0)
+conv2d#36(conv2d_4)_depthwise_conv2d#41(depthwise_conv2d_2) int8 0.340496867895 4 1 24 32 32 4 1 24 32 32 1 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0)
+conv2d#453(conv2d_53)_split#0#relu#456(batch_norm_74) fp32 1 4 1 48 4 4 4 1 48 4 4 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+split#0#relu#456(batch_norm_74)_prior_box#501(prior_box_2) fp32 1 4 1 48 4 4 4 1 48 4 4 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1)
+inputs 1 image_split#0#image fp32
+outputs 1 scale#543(save_infer_model_scale_0)_save_infer_model_scale_0 fp32
+OPS 183
+SaberSplit split#0#image fp32 1 5 image_split#0#image split#0#image_prior_box#477(prior_box_0) split#0#image_prior_box#489(prior_box_1) split#0#image_prior_box#501(prior_box_2) split#0#image_prior_box#513(prior_box_3) split#0#image_conv2d#3(conv2d_0) 
+SaberConv2D conv2d#3(conv2d_0) int8 1 1 split#0#image_conv2d#3(conv2d_0) conv2d#3(conv2d_0)_pool2d#7(pool2d_0) 648 24 1 3 3 2 2 1 1 1 1 1 3 0 648 744 0 1 2 0.000000 0.000000 0 0
+SaberPooling pool2d#7(pool2d_0) fp32 1 1 conv2d#3(conv2d_0)_pool2d#7(pool2d_0) pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0) 1 0 3 3 2 2 1 1 0
+SaberSplit split#0#pool2d#7(pool2d_0) fp32 1 2 pool2d#7(pool2d_0)_split#0#pool2d#7(pool2d_0) split#0#pool2d#7(pool2d_0)_depthwise_conv2d#9(depthwise_conv2d_0) split#0#pool2d#7(pool2d_0)_conv2d#17(conv2d_2) 
+SaberConv2D depthwise_conv2d#9(depthwise_conv2d_0) int8 1 1 split#0#pool2d#7(pool2d_0)_depthwise_conv2d#9(depthwise_conv2d_0) depthwise_conv2d#9(depthwise_conv2d_0)_conv2d#13(conv2d_1) 216 24 24 3 3 2 2 1 1 1 1 1 3 840 1056 1152 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#17(conv2d_2) int8 1 1 split#0#pool2d#7(pool2d_0)_conv2d#17(conv2d_2) conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1) 576 24 1 1 1 1 1 0 0 1 1 1 3 1248 1824 1920 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#13(conv2d_1) int8 1 1 depthwise_conv2d#9(depthwise_conv2d_0)_conv2d#13(conv2d_1) conv2d#13(conv2d_1)_concat#30(concat_0) 576 24 1 1 1 1 1 0 0 1 1 1 3 2016 2592 2688 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#22(depthwise_conv2d_1) int8 1 1 conv2d#17(conv2d_2)_depthwise_conv2d#22(depthwise_conv2d_1) depthwise_conv2d#22(depthwise_conv2d_1)_conv2d#26(conv2d_3) 216 24 24 3 3 2 2 1 1 1 1 1 3 2784 3000 3096 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#26(conv2d_3) int8 1 1 depthwise_conv2d#22(depthwise_conv2d_1)_conv2d#26(conv2d_3) conv2d#26(conv2d_3)_concat#30(concat_0) 576 24 1 1 1 1 1 0 0 1 1 1 3 3192 3768 3864 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#30(concat_0) fp32 2 1 conv2d#13(conv2d_1)_concat#30(concat_0) conv2d#26(conv2d_3)_concat#30(concat_0) concat#30(concat_0)_transpose2#32(transpose_0) 1
+SaberShuffleChannel transpose2#32(transpose_0) fp32 1 1 concat#30(concat_0)_transpose2#32(transpose_0) transpose2#32(transpose_0)_split#34(split_0) 2
+SaberSlice split#34(split_0) fp32 1 2 transpose2#32(transpose_0)_split#34(split_0) split#34(split_0)_concat#49(concat_1) split#34(split_0)_conv2d#36(conv2d_4) 1 1 24 
+SaberConv2D conv2d#36(conv2d_4) int8 1 1 split#34(split_0)_conv2d#36(conv2d_4) conv2d#36(conv2d_4)_depthwise_conv2d#41(depthwise_conv2d_2) 576 24 1 1 1 1 1 0 0 1 1 1 3 3960 4536 4632 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#41(depthwise_conv2d_2) int8 1 1 conv2d#36(conv2d_4)_depthwise_conv2d#41(depthwise_conv2d_2) depthwise_conv2d#41(depthwise_conv2d_2)_conv2d#45(conv2d_5) 216 24 24 3 3 1 1 1 1 1 1 1 3 4728 4944 5040 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#45(conv2d_5) int8 1 1 depthwise_conv2d#41(depthwise_conv2d_2)_conv2d#45(conv2d_5) conv2d#45(conv2d_5)_concat#49(concat_1) 576 24 1 1 1 1 1 0 0 1 1 1 3 5136 5712 5808 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#49(concat_1) fp32 2 1 split#34(split_0)_concat#49(concat_1) conv2d#45(conv2d_5)_concat#49(concat_1) concat#49(concat_1)_transpose2#51(transpose_1) 1
+SaberShuffleChannel transpose2#51(transpose_1) fp32 1 1 concat#49(concat_1)_transpose2#51(transpose_1) transpose2#51(transpose_1)_split#53(split_1) 2
+SaberSlice split#53(split_1) fp32 1 2 transpose2#51(transpose_1)_split#53(split_1) split#53(split_1)_concat#68(concat_2) split#53(split_1)_conv2d#55(conv2d_6) 1 1 24 
+SaberConv2D conv2d#55(conv2d_6) int8 1 1 split#53(split_1)_conv2d#55(conv2d_6) conv2d#55(conv2d_6)_depthwise_conv2d#60(depthwise_conv2d_3) 576 24 1 1 1 1 1 0 0 1 1 1 3 5904 6480 6576 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#60(depthwise_conv2d_3) int8 1 1 conv2d#55(conv2d_6)_depthwise_conv2d#60(depthwise_conv2d_3) depthwise_conv2d#60(depthwise_conv2d_3)_conv2d#64(conv2d_7) 216 24 24 3 3 1 1 1 1 1 1 1 3 6672 6888 6984 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#64(conv2d_7) int8 1 1 depthwise_conv2d#60(depthwise_conv2d_3)_conv2d#64(conv2d_7) conv2d#64(conv2d_7)_concat#68(concat_2) 576 24 1 1 1 1 1 0 0 1 1 1 3 7080 7656 7752 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#68(concat_2) fp32 2 1 split#53(split_1)_concat#68(concat_2) conv2d#64(conv2d_7)_concat#68(concat_2) concat#68(concat_2)_transpose2#70(transpose_2) 1
+SaberShuffleChannel transpose2#70(transpose_2) fp32 1 1 concat#68(concat_2)_transpose2#70(transpose_2) transpose2#70(transpose_2)_split#72(split_2) 2
+SaberSlice split#72(split_2) fp32 1 2 transpose2#70(transpose_2)_split#72(split_2) split#72(split_2)_concat#87(concat_3) split#72(split_2)_conv2d#74(conv2d_8) 1 1 24 
+SaberConv2D conv2d#74(conv2d_8) int8 1 1 split#72(split_2)_conv2d#74(conv2d_8) conv2d#74(conv2d_8)_depthwise_conv2d#79(depthwise_conv2d_4) 576 24 1 1 1 1 1 0 0 1 1 1 3 7848 8424 8520 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#79(depthwise_conv2d_4) int8 1 1 conv2d#74(conv2d_8)_depthwise_conv2d#79(depthwise_conv2d_4) depthwise_conv2d#79(depthwise_conv2d_4)_conv2d#83(conv2d_9) 216 24 24 3 3 1 1 1 1 1 1 1 3 8616 8832 8928 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#83(conv2d_9) int8 1 1 depthwise_conv2d#79(depthwise_conv2d_4)_conv2d#83(conv2d_9) conv2d#83(conv2d_9)_concat#87(concat_3) 576 24 1 1 1 1 1 0 0 1 1 1 3 9024 9600 9696 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#87(concat_3) fp32 2 1 split#72(split_2)_concat#87(concat_3) conv2d#83(conv2d_9)_concat#87(concat_3) concat#87(concat_3)_transpose2#89(transpose_3) 1
+SaberShuffleChannel transpose2#89(transpose_3) fp32 1 1 concat#87(concat_3)_transpose2#89(transpose_3) transpose2#89(transpose_3)_split#0#reshape2#90(reshape2_7) 2
+SaberSplit split#0#reshape2#90(reshape2_7) fp32 1 2 transpose2#89(transpose_3)_split#0#reshape2#90(reshape2_7) split#0#reshape2#90(reshape2_7)_depthwise_conv2d#92(depthwise_conv2d_5) split#0#reshape2#90(reshape2_7)_conv2d#100(conv2d_11) 
+SaberConv2D depthwise_conv2d#92(depthwise_conv2d_5) int8 1 1 split#0#reshape2#90(reshape2_7)_depthwise_conv2d#92(depthwise_conv2d_5) depthwise_conv2d#92(depthwise_conv2d_5)_conv2d#96(conv2d_10) 432 48 48 3 3 2 2 1 1 1 1 1 3 9792 10224 10416 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#100(conv2d_11) int8 1 1 split#0#reshape2#90(reshape2_7)_conv2d#100(conv2d_11) conv2d#100(conv2d_11)_depthwise_conv2d#105(depthwise_conv2d_6) 2304 48 1 1 1 1 1 0 0 1 1 1 3 10608 12912 13104 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#96(conv2d_10) int8 1 1 depthwise_conv2d#92(depthwise_conv2d_5)_conv2d#96(conv2d_10) conv2d#96(conv2d_10)_concat#113(concat_4) 2304 48 1 1 1 1 1 0 0 1 1 1 3 13296 15600 15792 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#105(depthwise_conv2d_6) int8 1 1 conv2d#100(conv2d_11)_depthwise_conv2d#105(depthwise_conv2d_6) depthwise_conv2d#105(depthwise_conv2d_6)_conv2d#109(conv2d_12) 432 48 48 3 3 2 2 1 1 1 1 1 3 15984 16416 16608 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#109(conv2d_12) int8 1 1 depthwise_conv2d#105(depthwise_conv2d_6)_conv2d#109(conv2d_12) conv2d#109(conv2d_12)_concat#113(concat_4) 2304 48 1 1 1 1 1 0 0 1 1 1 3 16800 19104 19296 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#113(concat_4) fp32 2 1 conv2d#96(conv2d_10)_concat#113(concat_4) conv2d#109(conv2d_12)_concat#113(concat_4) concat#113(concat_4)_transpose2#115(transpose_4) 1
+SaberShuffleChannel transpose2#115(transpose_4) fp32 1 1 concat#113(concat_4)_transpose2#115(transpose_4) transpose2#115(transpose_4)_split#117(split_3) 2
+SaberSlice split#117(split_3) fp32 1 2 transpose2#115(transpose_4)_split#117(split_3) split#117(split_3)_concat#132(concat_5) split#117(split_3)_conv2d#119(conv2d_13) 1 1 48 
+SaberConv2D conv2d#119(conv2d_13) int8 1 1 split#117(split_3)_conv2d#119(conv2d_13) conv2d#119(conv2d_13)_depthwise_conv2d#124(depthwise_conv2d_7) 2304 48 1 1 1 1 1 0 0 1 1 1 3 19488 21792 21984 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#124(depthwise_conv2d_7) int8 1 1 conv2d#119(conv2d_13)_depthwise_conv2d#124(depthwise_conv2d_7) depthwise_conv2d#124(depthwise_conv2d_7)_conv2d#128(conv2d_14) 432 48 48 3 3 1 1 1 1 1 1 1 3 22176 22608 22800 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#128(conv2d_14) int8 1 1 depthwise_conv2d#124(depthwise_conv2d_7)_conv2d#128(conv2d_14) conv2d#128(conv2d_14)_concat#132(concat_5) 2304 48 1 1 1 1 1 0 0 1 1 1 3 22992 25296 25488 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#132(concat_5) fp32 2 1 split#117(split_3)_concat#132(concat_5) conv2d#128(conv2d_14)_concat#132(concat_5) concat#132(concat_5)_transpose2#134(transpose_5) 1
+SaberShuffleChannel transpose2#134(transpose_5) fp32 1 1 concat#132(concat_5)_transpose2#134(transpose_5) transpose2#134(transpose_5)_split#136(split_4) 2
+SaberSlice split#136(split_4) fp32 1 2 transpose2#134(transpose_5)_split#136(split_4) split#136(split_4)_concat#151(concat_6) split#136(split_4)_conv2d#138(conv2d_15) 1 1 48 
+SaberConv2D conv2d#138(conv2d_15) int8 1 1 split#136(split_4)_conv2d#138(conv2d_15) conv2d#138(conv2d_15)_depthwise_conv2d#143(depthwise_conv2d_8) 2304 48 1 1 1 1 1 0 0 1 1 1 3 25680 27984 28176 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#143(depthwise_conv2d_8) int8 1 1 conv2d#138(conv2d_15)_depthwise_conv2d#143(depthwise_conv2d_8) depthwise_conv2d#143(depthwise_conv2d_8)_conv2d#147(conv2d_16) 432 48 48 3 3 1 1 1 1 1 1 1 3 28368 28800 28992 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#147(conv2d_16) int8 1 1 depthwise_conv2d#143(depthwise_conv2d_8)_conv2d#147(conv2d_16) conv2d#147(conv2d_16)_concat#151(concat_6) 2304 48 1 1 1 1 1 0 0 1 1 1 3 29184 31488 31680 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#151(concat_6) fp32 2 1 split#136(split_4)_concat#151(concat_6) conv2d#147(conv2d_16)_concat#151(concat_6) concat#151(concat_6)_transpose2#153(transpose_6) 1
+SaberShuffleChannel transpose2#153(transpose_6) fp32 1 1 concat#151(concat_6)_transpose2#153(transpose_6) transpose2#153(transpose_6)_split#155(split_5) 2
+SaberSlice split#155(split_5) fp32 1 2 transpose2#153(transpose_6)_split#155(split_5) split#155(split_5)_concat#170(concat_7) split#155(split_5)_conv2d#157(conv2d_17) 1 1 48 
+SaberConv2D conv2d#157(conv2d_17) int8 1 1 split#155(split_5)_conv2d#157(conv2d_17) conv2d#157(conv2d_17)_depthwise_conv2d#162(depthwise_conv2d_9) 2304 48 1 1 1 1 1 0 0 1 1 1 3 31872 34176 34368 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#162(depthwise_conv2d_9) int8 1 1 conv2d#157(conv2d_17)_depthwise_conv2d#162(depthwise_conv2d_9) depthwise_conv2d#162(depthwise_conv2d_9)_conv2d#166(conv2d_18) 432 48 48 3 3 1 1 1 1 1 1 1 3 34560 34992 35184 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#166(conv2d_18) int8 1 1 depthwise_conv2d#162(depthwise_conv2d_9)_conv2d#166(conv2d_18) conv2d#166(conv2d_18)_concat#170(concat_7) 2304 48 1 1 1 1 1 0 0 1 1 1 3 35376 37680 37872 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#170(concat_7) fp32 2 1 split#155(split_5)_concat#170(concat_7) conv2d#166(conv2d_18)_concat#170(concat_7) concat#170(concat_7)_transpose2#172(transpose_7) 1
+SaberShuffleChannel transpose2#172(transpose_7) fp32 1 1 concat#170(concat_7)_transpose2#172(transpose_7) transpose2#172(transpose_7)_split#174(split_6) 2
+SaberSlice split#174(split_6) fp32 1 2 transpose2#172(transpose_7)_split#174(split_6) split#174(split_6)_concat#189(concat_8) split#174(split_6)_conv2d#176(conv2d_19) 1 1 48 
+SaberConv2D conv2d#176(conv2d_19) int8 1 1 split#174(split_6)_conv2d#176(conv2d_19) conv2d#176(conv2d_19)_depthwise_conv2d#181(depthwise_conv2d_10) 2304 48 1 1 1 1 1 0 0 1 1 1 3 38064 40368 40560 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#181(depthwise_conv2d_10) int8 1 1 conv2d#176(conv2d_19)_depthwise_conv2d#181(depthwise_conv2d_10) depthwise_conv2d#181(depthwise_conv2d_10)_conv2d#185(conv2d_20) 432 48 48 3 3 1 1 1 1 1 1 1 3 40752 41184 41376 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#185(conv2d_20) int8 1 1 depthwise_conv2d#181(depthwise_conv2d_10)_conv2d#185(conv2d_20) conv2d#185(conv2d_20)_concat#189(concat_8) 2304 48 1 1 1 1 1 0 0 1 1 1 3 41568 43872 44064 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#189(concat_8) fp32 2 1 split#174(split_6)_concat#189(concat_8) conv2d#185(conv2d_20)_concat#189(concat_8) concat#189(concat_8)_transpose2#191(transpose_8) 1
+SaberShuffleChannel transpose2#191(transpose_8) fp32 1 1 concat#189(concat_8)_transpose2#191(transpose_8) transpose2#191(transpose_8)_split#193(split_7) 2
+SaberSlice split#193(split_7) fp32 1 2 transpose2#191(transpose_8)_split#193(split_7) split#193(split_7)_concat#208(concat_9) split#193(split_7)_conv2d#195(conv2d_21) 1 1 48 
+SaberConv2D conv2d#195(conv2d_21) int8 1 1 split#193(split_7)_conv2d#195(conv2d_21) conv2d#195(conv2d_21)_depthwise_conv2d#200(depthwise_conv2d_11) 2304 48 1 1 1 1 1 0 0 1 1 1 3 44256 46560 46752 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#200(depthwise_conv2d_11) int8 1 1 conv2d#195(conv2d_21)_depthwise_conv2d#200(depthwise_conv2d_11) depthwise_conv2d#200(depthwise_conv2d_11)_conv2d#204(conv2d_22) 432 48 48 3 3 1 1 1 1 1 1 1 3 46944 47376 47568 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#204(conv2d_22) int8 1 1 depthwise_conv2d#200(depthwise_conv2d_11)_conv2d#204(conv2d_22) conv2d#204(conv2d_22)_concat#208(concat_9) 2304 48 1 1 1 1 1 0 0 1 1 1 3 47760 50064 50256 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#208(concat_9) fp32 2 1 split#193(split_7)_concat#208(concat_9) conv2d#204(conv2d_22)_concat#208(concat_9) concat#208(concat_9)_transpose2#210(transpose_9) 1
+SaberShuffleChannel transpose2#210(transpose_9) fp32 1 1 concat#208(concat_9)_transpose2#210(transpose_9) transpose2#210(transpose_9)_split#212(split_8) 2
+SaberSlice split#212(split_8) fp32 1 2 transpose2#210(transpose_9)_split#212(split_8) split#212(split_8)_concat#227(concat_10) split#212(split_8)_conv2d#214(conv2d_23) 1 1 48 
+SaberConv2D conv2d#214(conv2d_23) int8 1 1 split#212(split_8)_conv2d#214(conv2d_23) conv2d#214(conv2d_23)_depthwise_conv2d#219(depthwise_conv2d_12) 2304 48 1 1 1 1 1 0 0 1 1 1 3 50448 52752 52944 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#219(depthwise_conv2d_12) int8 1 1 conv2d#214(conv2d_23)_depthwise_conv2d#219(depthwise_conv2d_12) depthwise_conv2d#219(depthwise_conv2d_12)_conv2d#223(conv2d_24) 432 48 48 3 3 1 1 1 1 1 1 1 3 53136 53568 53760 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#223(conv2d_24) int8 1 1 depthwise_conv2d#219(depthwise_conv2d_12)_conv2d#223(conv2d_24) conv2d#223(conv2d_24)_concat#227(concat_10) 2304 48 1 1 1 1 1 0 0 1 1 1 3 53952 56256 56448 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#227(concat_10) fp32 2 1 split#212(split_8)_concat#227(concat_10) conv2d#223(conv2d_24)_concat#227(concat_10) concat#227(concat_10)_transpose2#229(transpose_10) 1
+SaberShuffleChannel transpose2#229(transpose_10) fp32 1 1 concat#227(concat_10)_transpose2#229(transpose_10) transpose2#229(transpose_10)_split#231(split_9) 2
+SaberSlice split#231(split_9) fp32 1 2 transpose2#229(transpose_10)_split#231(split_9) split#231(split_9)_concat#246(concat_11) split#231(split_9)_conv2d#233(conv2d_25) 1 1 48 
+SaberConv2D conv2d#233(conv2d_25) int8 1 1 split#231(split_9)_conv2d#233(conv2d_25) conv2d#233(conv2d_25)_depthwise_conv2d#238(depthwise_conv2d_13) 2304 48 1 1 1 1 1 0 0 1 1 1 3 56640 58944 59136 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#238(depthwise_conv2d_13) int8 1 1 conv2d#233(conv2d_25)_depthwise_conv2d#238(depthwise_conv2d_13) depthwise_conv2d#238(depthwise_conv2d_13)_conv2d#242(conv2d_26) 432 48 48 3 3 1 1 1 1 1 1 1 3 59328 59760 59952 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#242(conv2d_26) int8 1 1 depthwise_conv2d#238(depthwise_conv2d_13)_conv2d#242(conv2d_26) conv2d#242(conv2d_26)_concat#246(concat_11) 2304 48 1 1 1 1 1 0 0 1 1 1 3 60144 62448 62640 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#246(concat_11) fp32 2 1 split#231(split_9)_concat#246(concat_11) conv2d#242(conv2d_26)_concat#246(concat_11) concat#246(concat_11)_transpose2#248(transpose_11) 1
+SaberShuffleChannel transpose2#248(transpose_11) fp32 1 1 concat#246(concat_11)_transpose2#248(transpose_11) transpose2#248(transpose_11)_split#0#reshape2#249(reshape2_23) 2
+SaberSplit split#0#reshape2#249(reshape2_23) fp32 1 3 transpose2#248(transpose_11)_split#0#reshape2#249(reshape2_23) split#0#reshape2#249(reshape2_23)_depthwise_conv2d#251(depthwise_conv2d_14) split#0#reshape2#249(reshape2_23)_conv2d#259(conv2d_28) split#0#reshape2#249(reshape2_23)_conv2d#419(conv2d_50) 
+SaberConv2D depthwise_conv2d#251(depthwise_conv2d_14) int8 1 1 split#0#reshape2#249(reshape2_23)_depthwise_conv2d#251(depthwise_conv2d_14) depthwise_conv2d#251(depthwise_conv2d_14)_conv2d#255(conv2d_27) 864 96 96 3 3 2 2 1 1 1 1 1 3 62832 63696 64080 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#259(conv2d_28) int8 1 1 split#0#reshape2#249(reshape2_23)_conv2d#259(conv2d_28) conv2d#259(conv2d_28)_depthwise_conv2d#264(depthwise_conv2d_15) 9216 96 1 1 1 1 1 0 0 1 1 1 3 64464 73680 74064 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#419(conv2d_50) int8 1 1 split#0#reshape2#249(reshape2_23)_conv2d#419(conv2d_50) conv2d#419(conv2d_50)_conv2d#424(conv2d_51) 96 48 48 1 1 1 1 0 0 1 1 1 3 74448 74544 74736 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#255(conv2d_27) int8 1 1 depthwise_conv2d#251(depthwise_conv2d_14)_conv2d#255(conv2d_27) conv2d#255(conv2d_27)_concat#272(concat_12) 9216 96 1 1 1 1 1 0 0 1 1 1 3 74928 84144 84528 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#264(depthwise_conv2d_15) int8 1 1 conv2d#259(conv2d_28)_depthwise_conv2d#264(depthwise_conv2d_15) depthwise_conv2d#264(depthwise_conv2d_15)_conv2d#268(conv2d_29) 864 96 96 3 3 2 2 1 1 1 1 1 3 84912 85776 86160 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#424(conv2d_51) int8 1 1 conv2d#419(conv2d_50)_conv2d#424(conv2d_51) conv2d#424(conv2d_51)_elementwise_add#436(tmp_2) 2304 48 1 1 1 1 1 0 0 1 1 1 3 86544 88848 89040 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#268(conv2d_29) int8 1 1 depthwise_conv2d#264(depthwise_conv2d_15)_conv2d#268(conv2d_29) conv2d#268(conv2d_29)_concat#272(concat_12) 9216 96 1 1 1 1 1 0 0 1 1 1 3 89232 98448 98832 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#272(concat_12) fp32 2 1 conv2d#255(conv2d_27)_concat#272(concat_12) conv2d#268(conv2d_29)_concat#272(concat_12) concat#272(concat_12)_transpose2#274(transpose_12) 1
+SaberShuffleChannel transpose2#274(transpose_12) fp32 1 1 concat#272(concat_12)_transpose2#274(transpose_12) transpose2#274(transpose_12)_split#276(split_10) 2
+SaberSlice split#276(split_10) fp32 1 2 transpose2#274(transpose_12)_split#276(split_10) split#276(split_10)_concat#291(concat_13) split#276(split_10)_conv2d#278(conv2d_30) 1 1 96 
+SaberConv2D conv2d#278(conv2d_30) int8 1 1 split#276(split_10)_conv2d#278(conv2d_30) conv2d#278(conv2d_30)_depthwise_conv2d#283(depthwise_conv2d_16) 9216 96 1 1 1 1 1 0 0 1 1 1 3 99216 108432 108816 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#283(depthwise_conv2d_16) int8 1 1 conv2d#278(conv2d_30)_depthwise_conv2d#283(depthwise_conv2d_16) depthwise_conv2d#283(depthwise_conv2d_16)_conv2d#287(conv2d_31) 864 96 96 3 3 1 1 1 1 1 1 1 3 109200 110064 110448 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#287(conv2d_31) int8 1 1 depthwise_conv2d#283(depthwise_conv2d_16)_conv2d#287(conv2d_31) conv2d#287(conv2d_31)_concat#291(concat_13) 9216 96 1 1 1 1 1 0 0 1 1 1 3 110832 120048 120432 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#291(concat_13) fp32 2 1 split#276(split_10)_concat#291(concat_13) conv2d#287(conv2d_31)_concat#291(concat_13) concat#291(concat_13)_transpose2#293(transpose_13) 1
+SaberShuffleChannel transpose2#293(transpose_13) fp32 1 1 concat#291(concat_13)_transpose2#293(transpose_13) transpose2#293(transpose_13)_split#295(split_11) 2
+SaberSlice split#295(split_11) fp32 1 2 transpose2#293(transpose_13)_split#295(split_11) split#295(split_11)_concat#310(concat_14) split#295(split_11)_conv2d#297(conv2d_32) 1 1 96 
+SaberConv2D conv2d#297(conv2d_32) int8 1 1 split#295(split_11)_conv2d#297(conv2d_32) conv2d#297(conv2d_32)_depthwise_conv2d#302(depthwise_conv2d_17) 9216 96 1 1 1 1 1 0 0 1 1 1 3 120816 130032 130416 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#302(depthwise_conv2d_17) int8 1 1 conv2d#297(conv2d_32)_depthwise_conv2d#302(depthwise_conv2d_17) depthwise_conv2d#302(depthwise_conv2d_17)_conv2d#306(conv2d_33) 864 96 96 3 3 1 1 1 1 1 1 1 3 130800 131664 132048 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#306(conv2d_33) int8 1 1 depthwise_conv2d#302(depthwise_conv2d_17)_conv2d#306(conv2d_33) conv2d#306(conv2d_33)_concat#310(concat_14) 9216 96 1 1 1 1 1 0 0 1 1 1 3 132432 141648 142032 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#310(concat_14) fp32 2 1 split#295(split_11)_concat#310(concat_14) conv2d#306(conv2d_33)_concat#310(concat_14) concat#310(concat_14)_transpose2#312(transpose_14) 1
+SaberShuffleChannel transpose2#312(transpose_14) fp32 1 1 concat#310(concat_14)_transpose2#312(transpose_14) transpose2#312(transpose_14)_split#314(split_12) 2
+SaberSlice split#314(split_12) fp32 1 2 transpose2#312(transpose_14)_split#314(split_12) split#314(split_12)_concat#329(concat_15) split#314(split_12)_conv2d#316(conv2d_34) 1 1 96 
+SaberConv2D conv2d#316(conv2d_34) int8 1 1 split#314(split_12)_conv2d#316(conv2d_34) conv2d#316(conv2d_34)_depthwise_conv2d#321(depthwise_conv2d_18) 9216 96 1 1 1 1 1 0 0 1 1 1 3 142416 151632 152016 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#321(depthwise_conv2d_18) int8 1 1 conv2d#316(conv2d_34)_depthwise_conv2d#321(depthwise_conv2d_18) depthwise_conv2d#321(depthwise_conv2d_18)_conv2d#325(conv2d_35) 864 96 96 3 3 1 1 1 1 1 1 1 3 152400 153264 153648 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#325(conv2d_35) int8 1 1 depthwise_conv2d#321(depthwise_conv2d_18)_conv2d#325(conv2d_35) conv2d#325(conv2d_35)_concat#329(concat_15) 9216 96 1 1 1 1 1 0 0 1 1 1 3 154032 163248 163632 0 1 2 0.000000 0.000000 0 0
+SaberConcat concat#329(concat_15) fp32 2 1 split#314(split_12)_concat#329(concat_15) conv2d#325(conv2d_35)_concat#329(concat_15) concat#329(concat_15)_transpose2#331(transpose_15) 1
+SaberShuffleChannel transpose2#331(transpose_15) fp32 1 1 concat#329(concat_15)_transpose2#331(transpose_15) transpose2#331(transpose_15)_split#0#reshape2#332(reshape2_31) 2
+SaberSplit split#0#reshape2#332(reshape2_31) fp32 1 2 transpose2#331(transpose_15)_split#0#reshape2#332(reshape2_31) split#0#reshape2#332(reshape2_31)_conv2d#334(conv2d_36) split#0#reshape2#332(reshape2_31)_conv2d#401(conv2d_48) 
+SaberConv2D conv2d#334(conv2d_36) int8 1 1 split#0#reshape2#332(reshape2_31)_conv2d#334(conv2d_36) conv2d#334(conv2d_36)_conv2d#339(conv2d_37) 192 48 48 1 1 1 1 0 0 1 1 1 3 164016 164208 164400 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#401(conv2d_48) int8 1 1 split#0#reshape2#332(reshape2_31)_conv2d#401(conv2d_48) conv2d#401(conv2d_48)_conv2d#406(conv2d_49) 192 48 48 1 1 1 1 0 0 1 1 1 3 164592 164784 164976 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#339(conv2d_37) int8 1 1 conv2d#334(conv2d_36)_conv2d#339(conv2d_37) conv2d#339(conv2d_37)_conv2d#344(conv2d_38) 2304 48 1 1 1 1 1 0 0 1 1 1 3 165168 167472 167664 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#406(conv2d_49) int8 1 1 conv2d#401(conv2d_48)_conv2d#406(conv2d_49) conv2d#406(conv2d_49)_elementwise_add#418(tmp_1) 2304 48 1 1 1 1 1 0 0 1 1 1 3 167856 170160 170352 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#344(conv2d_38) int8 1 1 conv2d#339(conv2d_37)_conv2d#344(conv2d_38) conv2d#344(conv2d_38)_conv2d#349(conv2d_39) 1728 96 24 3 3 2 2 1 1 1 1 1 3 170544 172272 172656 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#349(conv2d_39) int8 1 1 conv2d#344(conv2d_38)_conv2d#349(conv2d_39) conv2d#349(conv2d_39)_split#0#relu#352(batch_norm_58) 9216 96 1 1 1 1 1 0 0 1 1 1 3 173040 182256 182640 0 1 2 0.000000 0.000000 0 0
+SaberSplit split#0#relu#352(batch_norm_58) fp32 1 2 conv2d#349(conv2d_39)_split#0#relu#352(batch_norm_58) split#0#relu#352(batch_norm_58)_conv2d#354(conv2d_40) split#0#relu#352(batch_norm_58)_conv2d#383(conv2d_46) 
+SaberConv2D conv2d#354(conv2d_40) int8 1 1 split#0#relu#352(batch_norm_58)_conv2d#354(conv2d_40) conv2d#354(conv2d_40)_conv2d#359(conv2d_41) 96 48 48 1 1 1 1 0 0 1 1 1 3 183024 183120 183312 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#383(conv2d_46) int8 1 1 split#0#relu#352(batch_norm_58)_conv2d#383(conv2d_46) conv2d#383(conv2d_46)_conv2d#388(conv2d_47) 96 48 48 1 1 1 1 0 0 1 1 1 3 183504 183600 183792 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#359(conv2d_41) int8 1 1 conv2d#354(conv2d_40)_conv2d#359(conv2d_41) conv2d#359(conv2d_41)_conv2d#364(conv2d_42) 2304 48 1 1 1 1 1 0 0 1 1 1 3 183984 186288 186480 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#388(conv2d_47) int8 1 1 conv2d#383(conv2d_46)_conv2d#388(conv2d_47) conv2d#388(conv2d_47)_elementwise_add#400(tmp_0) 2304 48 1 1 1 1 1 0 0 1 1 1 3 186672 188976 189168 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#364(conv2d_42) int8 1 1 conv2d#359(conv2d_41)_conv2d#364(conv2d_42) conv2d#364(conv2d_42)_conv2d#369(conv2d_43) 1728 96 24 3 3 2 2 1 1 1 1 1 3 189360 191088 191472 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#369(conv2d_43) int8 1 1 conv2d#364(conv2d_42)_conv2d#369(conv2d_43) conv2d#369(conv2d_43)_conv2d#374(conv2d_44) 9216 96 1 1 1 1 1 0 0 1 1 1 3 191856 201072 201456 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#374(conv2d_44) int8 1 1 conv2d#369(conv2d_43)_conv2d#374(conv2d_44) conv2d#374(conv2d_44)_conv2d#379(conv2d_45) 96 48 48 1 1 1 1 0 0 1 1 1 3 201840 201936 202128 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#379(conv2d_45) int8 1 1 conv2d#374(conv2d_44)_conv2d#379(conv2d_45) conv2d#379(conv2d_45)_split#0#relu#382(batch_norm_64) 2304 48 1 1 1 1 1 0 0 1 1 1 3 202320 204624 204816 0 1 2 0.000000 0.000000 0 0
+SaberSplit split#0#relu#382(batch_norm_64) fp32 1 2 conv2d#379(conv2d_45)_split#0#relu#382(batch_norm_64) split#0#relu#382(batch_norm_64)_conv2d_transpose#392(fpn_topdown_block3_dw_deconv) split#0#relu#382(batch_norm_64)_depthwise_conv2d#438(depthwise_conv2d_19) 
+SaberDeconv2D conv2d_transpose#392(fpn_topdown_block3_dw_deconv) fp32 1 1 split#0#relu#382(batch_norm_64)_conv2d_transpose#392(fpn_topdown_block3_dw_deconv) conv2d_transpose#392(fpn_topdown_block3_dw_deconv)_conv2d#396(fpn_topdown_block3_sep_conv) 768 48 48 4 4 2 2 1 1 1 1 1 1 205008 208080 208084 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#438(depthwise_conv2d_19) int8 1 1 split#0#relu#382(batch_norm_64)_depthwise_conv2d#438(depthwise_conv2d_19) depthwise_conv2d#438(depthwise_conv2d_19)_conv2d#443(conv2d_52) 432 48 48 3 3 1 1 1 1 1 1 1 3 208276 208708 208900 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#396(fpn_topdown_block3_sep_conv) int8 1 1 conv2d_transpose#392(fpn_topdown_block3_dw_deconv)_conv2d#396(fpn_topdown_block3_sep_conv) conv2d#396(fpn_topdown_block3_sep_conv)_elementwise_add#400(tmp_0) 2304 48 1 1 1 1 1 0 0 1 1 1 3 209092 211396 211588 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#443(conv2d_52) int8 1 1 depthwise_conv2d#438(depthwise_conv2d_19)_conv2d#443(conv2d_52) conv2d#443(conv2d_52)_split#0#relu#446(batch_norm_72) 2304 48 1 1 1 1 1 0 0 1 1 1 3 211780 214084 214276 0 1 2 0.000000 0.000000 0 0
+SaberSplit split#0#relu#446(batch_norm_72) fp32 1 3 conv2d#443(conv2d_52)_split#0#relu#446(batch_norm_72) split#0#relu#446(batch_norm_72)_prior_box#513(prior_box_3) split#0#relu#446(batch_norm_72)_conv2d#515(conv2d_62) split#0#relu#446(batch_norm_72)_conv2d#520(conv2d_63) 
+SaberConv2D conv2d#515(conv2d_62) int8 1 1 split#0#relu#446(batch_norm_72)_conv2d#515(conv2d_62) conv2d#515(conv2d_62)_transpose2#518(transpose_22) 1152 24 1 1 1 1 1 0 0 1 1 1 3 214468 215620 215716 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#520(conv2d_63) int8 1 1 split#0#relu#446(batch_norm_72)_conv2d#520(conv2d_63) conv2d#520(conv2d_63)_transpose2#523(transpose_23) 576 12 1 1 1 1 1 0 0 1 1 1 3 215812 216388 216436 0 0 2 0.000000 0.000000 0 0
+SaberPermute transpose2#518(transpose_22) fp32 1 1 conv2d#515(conv2d_62)_transpose2#518(transpose_22) transpose2#518(transpose_22)_flatten2#519(flatten_6) 4 0 2 3 1 
+SaberPermute transpose2#523(transpose_23) fp32 1 1 conv2d#520(conv2d_63)_transpose2#523(transpose_23) transpose2#523(transpose_23)_flatten2#524(flatten_7) 4 0 2 3 1 
+SaberFlatten flatten2#519(flatten_6) fp32 1 1 transpose2#518(transpose_22)_flatten2#519(flatten_6) flatten2#519(flatten_6)_concat#535(concat_18) 
+SaberFlatten flatten2#524(flatten_7) fp32 1 1 transpose2#523(transpose_23)_flatten2#524(flatten_7) flatten2#524(flatten_7)_concat#537(concat_19) 
+SaberPriorBox prior_box#513(prior_box_3) fp32 2 1 split#0#relu#446(batch_norm_72)_prior_box#513(prior_box_3) split#0#image_prior_box#513(prior_box_3) prior_box#513(prior_box_3)_concat#533(concat_16) 4 0.1 0.1 0.2 0.2 1 0 0 0 0.000000 0.000000 0.500000 0 2 1 1 195 1 256 2 2 3 0 0 0 
+SaberEltwise elementwise_add#400(tmp_0) fp32 2 1 conv2d#388(conv2d_47)_elementwise_add#400(tmp_0) conv2d#396(fpn_topdown_block3_sep_conv)_elementwise_add#400(tmp_0) elementwise_add#400(tmp_0)_split#0#elementwise_add#400(tmp_0) 2 2 1 1 
+SaberSplit split#0#elementwise_add#400(tmp_0) fp32 1 2 elementwise_add#400(tmp_0)_split#0#elementwise_add#400(tmp_0) split#0#elementwise_add#400(tmp_0)_conv2d_transpose#410(fpn_topdown_block2_dw_deconv) split#0#elementwise_add#400(tmp_0)_depthwise_conv2d#448(depthwise_conv2d_20) 
+SaberDeconv2D conv2d_transpose#410(fpn_topdown_block2_dw_deconv) fp32 1 1 split#0#elementwise_add#400(tmp_0)_conv2d_transpose#410(fpn_topdown_block2_dw_deconv) conv2d_transpose#410(fpn_topdown_block2_dw_deconv)_conv2d#414(fpn_topdown_block2_sep_conv) 768 48 48 4 4 2 2 1 1 1 1 1 1 216484 219556 219560 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#448(depthwise_conv2d_20) int8 1 1 split#0#elementwise_add#400(tmp_0)_depthwise_conv2d#448(depthwise_conv2d_20) depthwise_conv2d#448(depthwise_conv2d_20)_conv2d#453(conv2d_53) 432 48 48 3 3 1 1 1 1 1 1 1 3 219752 220184 220376 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#414(fpn_topdown_block2_sep_conv) int8 1 1 conv2d_transpose#410(fpn_topdown_block2_dw_deconv)_conv2d#414(fpn_topdown_block2_sep_conv) conv2d#414(fpn_topdown_block2_sep_conv)_elementwise_add#418(tmp_1) 2304 48 1 1 1 1 1 0 0 1 1 1 3 220568 222872 223064 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#453(conv2d_53) int8 1 1 depthwise_conv2d#448(depthwise_conv2d_20)_conv2d#453(conv2d_53) conv2d#453(conv2d_53)_split#0#relu#456(batch_norm_74) 2304 48 1 1 1 1 1 0 0 1 1 1 3 223256 225560 225752 0 1 2 0.000000 0.000000 0 0
+SaberSplit split#0#relu#456(batch_norm_74) fp32 1 3 conv2d#453(conv2d_53)_split#0#relu#456(batch_norm_74) split#0#relu#456(batch_norm_74)_prior_box#501(prior_box_2) split#0#relu#456(batch_norm_74)_conv2d#503(conv2d_60) split#0#relu#456(batch_norm_74)_conv2d#508(conv2d_61) 
+SaberConv2D conv2d#503(conv2d_60) int8 1 1 split#0#relu#456(batch_norm_74)_conv2d#503(conv2d_60) conv2d#503(conv2d_60)_transpose2#506(transpose_20) 1152 24 1 1 1 1 1 0 0 1 1 1 3 225944 227096 227192 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#508(conv2d_61) int8 1 1 split#0#relu#456(batch_norm_74)_conv2d#508(conv2d_61) conv2d#508(conv2d_61)_transpose2#511(transpose_21) 576 12 1 1 1 1 1 0 0 1 1 1 3 227288 227864 227912 0 0 2 0.000000 0.000000 0 0
+SaberPermute transpose2#506(transpose_20) fp32 1 1 conv2d#503(conv2d_60)_transpose2#506(transpose_20) transpose2#506(transpose_20)_flatten2#507(flatten_4) 4 0 2 3 1 
+SaberPermute transpose2#511(transpose_21) fp32 1 1 conv2d#508(conv2d_61)_transpose2#511(transpose_21) transpose2#511(transpose_21)_flatten2#512(flatten_5) 4 0 2 3 1 
+SaberFlatten flatten2#507(flatten_4) fp32 1 1 transpose2#506(transpose_20)_flatten2#507(flatten_4) flatten2#507(flatten_4)_concat#535(concat_18) 
+SaberFlatten flatten2#512(flatten_5) fp32 1 1 transpose2#511(transpose_21)_flatten2#512(flatten_5) flatten2#512(flatten_5)_concat#537(concat_19) 
+SaberPriorBox prior_box#501(prior_box_2) fp32 2 1 split#0#relu#456(batch_norm_74)_prior_box#501(prior_box_2) split#0#image_prior_box#501(prior_box_2) prior_box#501(prior_box_2)_concat#533(concat_16) 4 0.1 0.1 0.2 0.2 1 0 0 0 0.000000 0.000000 0.500000 0 2 1 1 150 1 195 2 2 3 0 0 0 
+SaberEltwise elementwise_add#418(tmp_1) fp32 2 1 conv2d#406(conv2d_49)_elementwise_add#418(tmp_1) conv2d#414(fpn_topdown_block2_sep_conv)_elementwise_add#418(tmp_1) elementwise_add#418(tmp_1)_split#0#elementwise_add#418(tmp_1) 2 2 1 1 
+SaberSplit split#0#elementwise_add#418(tmp_1) fp32 1 2 elementwise_add#418(tmp_1)_split#0#elementwise_add#418(tmp_1) split#0#elementwise_add#418(tmp_1)_conv2d_transpose#428(fpn_topdown_block1_dw_deconv) split#0#elementwise_add#418(tmp_1)_depthwise_conv2d#458(depthwise_conv2d_21) 
+SaberDeconv2D conv2d_transpose#428(fpn_topdown_block1_dw_deconv) fp32 1 1 split#0#elementwise_add#418(tmp_1)_conv2d_transpose#428(fpn_topdown_block1_dw_deconv) conv2d_transpose#428(fpn_topdown_block1_dw_deconv)_conv2d#432(fpn_topdown_block1_sep_conv) 768 48 48 4 4 2 2 1 1 1 1 1 1 227960 231032 231036 0 1 2 0.000000 0.000000 0 0
+SaberConv2D depthwise_conv2d#458(depthwise_conv2d_21) int8 1 1 split#0#elementwise_add#418(tmp_1)_depthwise_conv2d#458(depthwise_conv2d_21) depthwise_conv2d#458(depthwise_conv2d_21)_conv2d#463(conv2d_54) 432 48 48 3 3 1 1 1 1 1 1 1 3 231228 231660 231852 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#432(fpn_topdown_block1_sep_conv) int8 1 1 conv2d_transpose#428(fpn_topdown_block1_dw_deconv)_conv2d#432(fpn_topdown_block1_sep_conv) conv2d#432(fpn_topdown_block1_sep_conv)_elementwise_add#436(tmp_2) 2304 48 1 1 1 1 1 0 0 1 1 1 3 232044 234348 234540 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#463(conv2d_54) int8 1 1 depthwise_conv2d#458(depthwise_conv2d_21)_conv2d#463(conv2d_54) conv2d#463(conv2d_54)_split#0#relu#466(batch_norm_76) 2304 48 1 1 1 1 1 0 0 1 1 1 3 234732 237036 237228 0 1 2 0.000000 0.000000 0 0
+SaberSplit split#0#relu#466(batch_norm_76) fp32 1 3 conv2d#463(conv2d_54)_split#0#relu#466(batch_norm_76) split#0#relu#466(batch_norm_76)_prior_box#489(prior_box_1) split#0#relu#466(batch_norm_76)_conv2d#491(conv2d_58) split#0#relu#466(batch_norm_76)_conv2d#496(conv2d_59) 
+SaberConv2D conv2d#491(conv2d_58) int8 1 1 split#0#relu#466(batch_norm_76)_conv2d#491(conv2d_58) conv2d#491(conv2d_58)_transpose2#494(transpose_18) 1152 24 1 1 1 1 1 0 0 1 1 1 3 237420 238572 238668 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#496(conv2d_59) int8 1 1 split#0#relu#466(batch_norm_76)_conv2d#496(conv2d_59) conv2d#496(conv2d_59)_transpose2#499(transpose_19) 576 12 1 1 1 1 1 0 0 1 1 1 3 238764 239340 239388 0 0 2 0.000000 0.000000 0 0
+SaberPermute transpose2#494(transpose_18) fp32 1 1 conv2d#491(conv2d_58)_transpose2#494(transpose_18) transpose2#494(transpose_18)_flatten2#495(flatten_2) 4 0 2 3 1 
+SaberPermute transpose2#499(transpose_19) fp32 1 1 conv2d#496(conv2d_59)_transpose2#499(transpose_19) transpose2#499(transpose_19)_flatten2#500(flatten_3) 4 0 2 3 1 
+SaberFlatten flatten2#495(flatten_2) fp32 1 1 transpose2#494(transpose_18)_flatten2#495(flatten_2) flatten2#495(flatten_2)_concat#535(concat_18) 
+SaberFlatten flatten2#500(flatten_3) fp32 1 1 transpose2#499(transpose_19)_flatten2#500(flatten_3) flatten2#500(flatten_3)_concat#537(concat_19) 
+SaberPriorBox prior_box#489(prior_box_1) fp32 2 1 split#0#relu#466(batch_norm_76)_prior_box#489(prior_box_1) split#0#image_prior_box#489(prior_box_1) prior_box#489(prior_box_1)_concat#533(concat_16) 4 0.1 0.1 0.2 0.2 1 0 0 0 0.000000 0.000000 0.500000 0 2 1 1 105 1 150 2 2 3 0 0 0 
+SaberEltwise elementwise_add#436(tmp_2) fp32 2 1 conv2d#424(conv2d_51)_elementwise_add#436(tmp_2) conv2d#432(fpn_topdown_block1_sep_conv)_elementwise_add#436(tmp_2) elementwise_add#436(tmp_2)_depthwise_conv2d#468(depthwise_conv2d_22) 2 2 1 1 
+SaberConv2D depthwise_conv2d#468(depthwise_conv2d_22) int8 1 1 elementwise_add#436(tmp_2)_depthwise_conv2d#468(depthwise_conv2d_22) depthwise_conv2d#468(depthwise_conv2d_22)_conv2d#473(conv2d_55) 432 48 48 3 3 1 1 1 1 1 1 1 3 239436 239868 240060 0 1 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#473(conv2d_55) int8 1 1 depthwise_conv2d#468(depthwise_conv2d_22)_conv2d#473(conv2d_55) conv2d#473(conv2d_55)_split#0#relu#476(batch_norm_78) 2304 48 1 1 1 1 1 0 0 1 1 1 3 240252 242556 242748 0 1 2 0.000000 0.000000 0 0
+SaberSplit split#0#relu#476(batch_norm_78) fp32 1 3 conv2d#473(conv2d_55)_split#0#relu#476(batch_norm_78) split#0#relu#476(batch_norm_78)_prior_box#477(prior_box_0) split#0#relu#476(batch_norm_78)_conv2d#479(conv2d_56) split#0#relu#476(batch_norm_78)_conv2d#484(conv2d_57) 
+SaberConv2D conv2d#479(conv2d_56) int8 1 1 split#0#relu#476(batch_norm_78)_conv2d#479(conv2d_56) conv2d#479(conv2d_56)_transpose2#482(transpose_16) 576 12 1 1 1 1 1 0 0 1 1 1 3 242940 243516 243564 0 0 2 0.000000 0.000000 0 0
+SaberConv2D conv2d#484(conv2d_57) int8 1 1 split#0#relu#476(batch_norm_78)_conv2d#484(conv2d_57) conv2d#484(conv2d_57)_transpose2#487(transpose_17) 288 6 1 1 1 1 1 0 0 1 1 1 3 243612 243900 243924 0 0 2 0.000000 0.000000 0 0
+SaberPermute transpose2#482(transpose_16) fp32 1 1 conv2d#479(conv2d_56)_transpose2#482(transpose_16) transpose2#482(transpose_16)_flatten2#483(flatten_0) 4 0 2 3 1 
+SaberPermute transpose2#487(transpose_17) fp32 1 1 conv2d#484(conv2d_57)_transpose2#487(transpose_17) transpose2#487(transpose_17)_flatten2#488(flatten_1) 4 0 2 3 1 
+SaberFlatten flatten2#483(flatten_0) fp32 1 1 transpose2#482(transpose_16)_flatten2#483(flatten_0) flatten2#483(flatten_0)_concat#535(concat_18) 
+SaberFlatten flatten2#488(flatten_1) fp32 1 1 transpose2#487(transpose_17)_flatten2#488(flatten_1) flatten2#488(flatten_1)_concat#537(concat_19) 
+SaberConcat concat#535(concat_18) fp32 4 1 flatten2#483(flatten_0)_concat#535(concat_18) flatten2#495(flatten_2)_concat#535(concat_18) flatten2#507(flatten_4)_concat#535(concat_18) flatten2#519(flatten_6)_concat#535(concat_18) concat#535(concat_18)_reshape2#536(reshape2_32) 1
+SaberConcat concat#537(concat_19) fp32 4 1 flatten2#488(flatten_1)_concat#537(concat_19) flatten2#500(flatten_3)_concat#537(concat_19) flatten2#512(flatten_5)_concat#537(concat_19) flatten2#524(flatten_7)_concat#537(concat_19) concat#537(concat_19)_reshape2#538(reshape2_33) 1
+SaberReshape reshape2#536(reshape2_32) fp32 1 1 concat#535(concat_18)_reshape2#536(reshape2_32) reshape2#536(reshape2_32)_multiclass_nms#542(detection_output_0) 3 0 -1 4 
+SaberReshape reshape2#538(reshape2_33) fp32 1 1 concat#537(concat_19)_reshape2#538(reshape2_33) reshape2#538(reshape2_33)_softmax#540(softmax_0) 3 0 -1 2 
+SaberSoftmax softmax#540(softmax_0) fp32 1 1 reshape2#538(reshape2_33)_softmax#540(softmax_0) softmax#540(softmax_0)_multiclass_nms#542(detection_output_0) 2
+SaberPriorBox prior_box#477(prior_box_0) fp32 2 1 split#0#relu#476(batch_norm_78)_prior_box#477(prior_box_0) split#0#image_prior_box#477(prior_box_0) prior_box#477(prior_box_0)_concat#533(concat_16) 4 0.1 0.1 0.2 0.2 1 0 0 0 0.000000 0.000000 0.500000 0 2 1 1 60 0 1 2 0 0 0 
+SaberConcat concat#533(concat_16) fp32 4 1 prior_box#477(prior_box_0)_concat#533(concat_16) prior_box#489(prior_box_1)_concat#533(concat_16) prior_box#501(prior_box_2)_concat#533(concat_16) prior_box#513(prior_box_3)_concat#533(concat_16) concat#533(concat_16)_multiclass_nms#542(detection_output_0) 2
+SaberDetectionOutput multiclass_nms#542(detection_output_0) fp32 3 1 reshape2#536(reshape2_32)_multiclass_nms#542(detection_output_0) softmax#540(softmax_0)_multiclass_nms#542(detection_output_0) concat#533(concat_16)_multiclass_nms#542(detection_output_0) multiclass_nms#542(detection_output_0)_scale#543(save_infer_model_scale_0) 0 0.010000 400 0 200 2 0.450000 1.000000 1 0
+SaberScale scale#543(save_infer_model_scale_0) fp32 1 1 multiclass_nms#542(detection_output_0)_scale#543(save_infer_model_scale_0) scale#543(save_infer_model_scale_0)_save_infer_model_scale_0 243948 0 1 0 0 0 0
+

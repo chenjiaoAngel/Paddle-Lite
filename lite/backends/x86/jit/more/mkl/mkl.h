@@ -18,7 +18,7 @@
 #include <type_traits>
 #include <vector>
 #include "lite/backends/x86/jit/kernel_base.h"
-#include "lite/utils/paddle_enforce.h"
+#include "lite/utils/cp_logging.h"
 
 namespace paddle {
 namespace lite {
@@ -104,11 +104,11 @@ void EmbSeqPool(const T* table,
                 const int64_t* idx,
                 T* out,
                 const emb_seq_pool_attr_t* attr) {
-  PADDLE_ENFORCE_EQ(attr->table_width * attr->index_width, attr->out_width);
+  CHECK_EQ(attr->table_width * attr->index_width, attr->out_width);
   auto check_idx_value_valid = [&](int64_t i) {
-    PADDLE_ENFORCE_LT(
-        idx[i], attr->table_height, "idx value: %d, i: %d", idx[i], i);
-    PADDLE_ENFORCE_GE(idx[i], 0, "idx value: %d, i: %d", idx[i], i);
+    CHECK_LT(idx[i], attr->table_height) << "idx value: " << idx[i]
+                                         << " i: " << i;
+    CHECK_GE(idx[i], 0) << "idx value: " << idx[i] << " i: " << i;
   };
 
   for (int64_t w = 0; w != attr->index_width; ++w) {
@@ -142,14 +142,13 @@ void StrideScal(const T* a, const T* x, T* y, int n, int stride);
 // remain is the product of dimension shapes after the axis dimension
 template <typename T>
 void Softmax(const T* x, T* y, int n, int bs, int remain = 1) {
-  std::vector<T> entities(bs);
   for (int i = 0; i < bs; ++i) {
-    entities[i] = x[i * n];
+    T entity = x[i * n];
     for (int c = 1; c < n; ++c) {
-      entities[i] = x[i * n + c] > entities[i] ? x[i * n + c] : entities[i];
+      entity = x[i * n + c] > entity ? x[i * n + c] : entity;
     }
     for (int c = 0; c < n; ++c) {
-      y[i * n + c] = x[i * n + c] - entities[i];
+      y[i * n + c] = x[i * n + c] - entity;
     }
   }
   VExp(y, y, n * bs);
@@ -176,22 +175,22 @@ void Sgd(const T* lr,
          const int64_t* rows,
          T* out,
          const sgd_attr_t* attr) {
-  PADDLE_ENFORCE_EQ(attr->param_width, attr->grad_width);
-  PADDLE_ENFORCE_LE(attr->selected_rows_size, attr->grad_height);
+  CHECK_EQ(attr->param_width, attr->grad_width);
+  CHECK_LE(attr->selected_rows_size, attr->grad_height);
   T scalar = -lr[0];
   int width = attr->grad_width;
   if (out == param) {
     for (int64_t i = 0; i < attr->selected_rows_size; ++i) {
       auto h_idx = rows[i];
-      PADDLE_ENFORCE_LT(h_idx, attr->param_height);
-      PADDLE_ENFORCE_GE(h_idx, 0);
+      CHECK_LT(h_idx, attr->param_height);
+      CHECK_GE(h_idx, 0);
       VAXPY(scalar, grad + i * width, out + h_idx * width, width);
     }
   } else {
     for (int64_t i = 0; i < attr->selected_rows_size; ++i) {
       auto h_idx = rows[i];
-      PADDLE_ENFORCE_LT(h_idx, attr->param_height);
-      PADDLE_ENFORCE_GE(h_idx, 0);
+      CHECK_LT(h_idx, attr->param_height);
+      CHECK_GE(h_idx, 0);
       VScal(&scalar, grad + i * width, out + h_idx * width, width);
       VAdd(param + h_idx * width,
            out + h_idx * width,

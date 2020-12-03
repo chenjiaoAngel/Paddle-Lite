@@ -12,9 +12,16 @@ find_package(PythonInterp REQUIRED)
 execute_process(COMMAND ${PYTHON_EXECUTABLE} ${script_dir}/convert_arm_sdot_to_machine_code.py
         "--input_file=${CMAKE_CURRENT_SOURCE_DIR}/dotprod/__gemm_sdot_meta__.h"
         "--output_file=${CMAKE_CURRENT_SOURCE_DIR}/dotprod/gemm_sdot.h"
-        RESULT_VARIABLE gen_code_ret)
-if (NOT ${gen_code_ret} STREQUAL "0")
-  message(FATAL_ERROR "generating dotprod code quit with error: ${gen_code_ret}")
+        RESULT_VARIABLE gen_code_ret_v8)
+if (NOT ${gen_code_ret_v8} STREQUAL "0")
+  message(FATAL_ERROR "generating dotprod code quit with error: ${gen_code_ret_v8}")
+endif ()
+execute_process(COMMAND ${PYTHON_EXECUTABLE} ${script_dir}/convert_arm_vsdot_to_machine_code.py
+        "--input_file=${CMAKE_CURRENT_SOURCE_DIR}/dotprod/__gemm_vsdot_meta__.h"
+        "--output_file=${CMAKE_CURRENT_SOURCE_DIR}/dotprod/gemm_vsdot.h"
+        RESULT_VARIABLE gen_code_ret_v7)
+if (NOT ${gen_code_ret_v7} STREQUAL "0")
+  message(FATAL_ERROR "generating dotprod code quit with error: ${gen_code_ret_v7}")
 endif ()
 
 set(HAS_ARM_MATH_LIB_DIR OFF)
@@ -57,9 +64,10 @@ endif()
 
 if (NOT HAS_ARM_MATH_LIB_DIR)
   # TODO(xxx): seperate them and do not deps proto, eigen3
-  cc_library(math_arm SRCS  
-      funcs.cc 
+  cc_library(math_arm SRCS
+      funcs.cc
       packed_sgemm.cc
+      packed_sgemm_c4.cc
       sgemm.cc
       gemm_prepacked_int8.cc
       gemm_s8.cc
@@ -67,23 +75,34 @@ if (NOT HAS_ARM_MATH_LIB_DIR)
       gemv_arm_int8.cc
       conv3x3s1_direct_fp32.cc
       conv3x3s2_direct_fp32.cc
-      conv3x3s1_depthwise_fp32.cc
-      conv3x3s2_depthwise_fp32.cc
+      conv3x3s1p01_depthwise_fp32_relu.cc
+      conv3x3s2p01_depthwise_fp32_relu.cc
+      conv3x3s1p01_depthwise_fp32.cc
+      conv3x3s2p01_depthwise_fp32.cc
+      conv3x3s1px_depthwise_fp32.cc
+      conv3x3s2px_depthwise_fp32.cc
       conv3x3s1_direct_int8.cc
       conv3x3s2_direct_int8.cc
       conv3x3s1_depthwise_int8.cc
       conv3x3s2_depthwise_int8.cc
       conv5x5s1_depthwise_int8.cc
       conv5x5s1_depthwise_fp32.cc
+      conv5x5s2_depthwise_int8.cc
       conv5x5s2_depthwise_fp32.cc
+<<<<<<< HEAD
       conv_depthwise_3x3s1_fp32.cc
       conv_depthwise_3x3s2_fp32.cc
+=======
+      conv3x3_winograd_fp32_c4.cc
+      conv3x3_winograd_int8.cc
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       conv_winograd_3x3.cc
       conv_impl.cc
-      softmax.cc 
+      softmax.cc
       scale.cc
       pooling.cc
       elementwise.cc
+      layout.cc
       lrn.cc
       layout.cc
       decode_bboxes.cc
@@ -101,6 +120,7 @@ if (NOT HAS_ARM_MATH_LIB_DIR)
       axpy.cc
       fill_bias_relu.cc
       col_im_transform.cc
+      conv_transpose_depthwise.cc
       im2sequence.cc
       prior_box.cc
       sequence_softmax.cc
@@ -112,12 +132,18 @@ if (NOT HAS_ARM_MATH_LIB_DIR)
       beam_search.cc
       reduce_max.cc
       sequence_pool.cc
+      sequence_pool_grad.cc
       sequence_expand.cc
       slice.cc
       reduce_mean.cc
-      stack.cc
       affine_channel.cc
       anchor_generator.cc
+      split_merge_lod_tenosr.cc
+      reduce_prod.cc
+      reduce_sum.cc
+      lstm.cc
+      clip.cc
+      pixel_shuffle.cc
+      scatter.cc
       DEPS ${lite_kernel_deps} context tensor)
 endif()
- 

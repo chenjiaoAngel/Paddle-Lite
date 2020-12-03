@@ -35,17 +35,26 @@ class PoolingPE : public PE {
     Tensor* input = param_.input;
     Tensor* output = param_.output;
 
-    uint32_t k_width = param_.kernelSize[0];
-    uint32_t k_height = param_.kernelSize[1];
+    uint32_t k_height = 1;
+    uint32_t k_width = 1;
 
     if (param_.globalPooling) {
       k_width = input->shape().width();
       k_height = input->shape().height();
+      param_.kernelSize[0] = k_height;
+      param_.kernelSize[1] = k_width;
+    } else {
+      k_height = param_.kernelSize[0];
+      k_width = param_.kernelSize[1];
     }
 
     PoolingArgs args = {0};
     args.mode = param_.type;
-    args.kernel_reciprocal = fp32_2_fp16(1.0f / (k_width * k_height));
+    if (param_.globalPooling) {
+      args.kernel_reciprocal = fp32_2_fp16(1.0f);
+    } else {
+      args.kernel_reciprocal = fp32_2_fp16(1.0f / (k_width * k_height));
+    }
     args.image.address = input->data<float16>();
     args.image.channels = input->shape().channel();
     args.image.height = input->shape().height();
@@ -64,7 +73,7 @@ class PoolingPE : public PE {
     param_.poolingArgs = args;
 
     use_cpu_ = output->shape().width() == 1 && output->shape().height() == 1 &&
-               (k_width > 7 || k_height > 7);
+               (k_width > 255 || k_height > 255);
   }
 
   void compute() {
@@ -73,6 +82,7 @@ class PoolingPE : public PE {
     input->syncToCPU();
 
     Tensor float_input;
+    // Tensor float_output;
     float* image_addr = float_input.mutableData<float>(FP32, input->shape());
     float_input.copyFrom(input);
     float16* data_out = output->data<float16>();
@@ -107,6 +117,7 @@ class PoolingPE : public PE {
         for (int c = 0; c < image_channels; ++c) {
           const int pool_index = (ph * pooled_width_ + pw) * image_channels + c;
           float sum = 0;
+
           for (int h = hstart; h < hend; ++h) {
             for (int w = wstart; w < wend; ++w) {
               const int index = (h * image_width + w) * image_channels + c;
@@ -114,6 +125,7 @@ class PoolingPE : public PE {
               sum += value;
             }
           }
+
           float value = sum / kernel;
           if (value > max) {
             max = value;
@@ -127,7 +139,7 @@ class PoolingPE : public PE {
     output->flush();
   }
 
-  void cpu_compute() {
+  void cpu_compute1() {
     Tensor* input = param_.input;
     Tensor* output = param_.output;
     input->syncToCPU();
@@ -152,17 +164,71 @@ class PoolingPE : public PE {
     }
     output->scale()[0] = scale_max / 127.0f;
     output->scale()[1] = 127.0f / scale_max;
-    std::cout << "pool scale:" << scale_max / 127.0f << std::endl;
+    output->flush();
+  }
+
+  void cpu_compute() {
+    Tensor* input = param_.input;
+    Tensor* output = param_.output;
+    input->syncToCPU();
+
+    Tensor float_input;
+    float* float_input_data =
+        float_input.mutableData<float>(FP32, input->shape());
+    float_input.copyFrom(input);
+
+    float16* data_out = output->data<float16>();
+
+    int kernel_hw = param_.kernelSize[0] * param_.kernelSize[1];
+
+    float scale_max = 0;
+    for (int i = 0; i < output->shape().channel(); i++) {
+      float sum = 0;
+      for (int j = 0; j < kernel_hw; j++) {
+        sum += float_input_data[i * kernel_hw + j];
+      }
+      float value = sum / kernel_hw;
+      data_out[i] = float_to_half(value);
+      scale_max = std::max(scale_max, std::abs(value));
+    }
+    output->scale()[0] = scale_max / 127.0f;
+    output->scale()[1] = 127.0f / scale_max;
     output->flush();
   }
 
   bool dispatch() {
     if (use_cpu_) {
+      // cpu_compute();
       compute();
       return true;
     }
-    param_.input->syncToDevice();
-    return compute_fpga_pool(param_.poolingArgs) == 0;
+    if (param_.globalPooling) {
+      inplace_.relu_enable = false;
+      inplace_.leaky_relu_enable = false;
+      inplace_.relu6_enable = false;
+      inplace_.sigmoid_enable = false;
+      inplace_.global_pool_en = true;
+      config_inplace(inplace_);
+
+      int kernel_height = param_.kernelSize[1];
+      int kernel_width = param_.kernelSize[0];
+      globalPoolArgs.global_pool_factor =
+          float_to_half(1.0f / (kernel_height * kernel_width));
+      config_global_pool(globalPoolArgs);
+    }
+    int ret = (compute_fpga_pool(param_.poolingArgs) == 0);
+    if (param_.globalPooling) {
+      inplace_.relu_enable = false;
+      inplace_.leaky_relu_enable = false;
+      inplace_.relu6_enable = false;
+      inplace_.sigmoid_enable = false;
+      inplace_.global_pool_en = false;
+      config_inplace(inplace_);
+      globalPoolArgs.global_pool_factor = float_to_half(0);
+      config_global_pool(globalPoolArgs);
+    }
+
+    return ret;
   }
 
   PoolingParam& param() { return param_; }
@@ -170,6 +236,8 @@ class PoolingPE : public PE {
  private:
   PoolingParam param_;
   bool use_cpu_;
+  InplaceArgs inplace_ = {0};
+  GlobalPoolArgs globalPoolArgs;
 };
 
 }  // namespace zynqmp

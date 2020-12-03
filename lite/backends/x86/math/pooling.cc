@@ -49,13 +49,13 @@ class Pool2dFunctor<lite::TargetType::kX86, PoolProcess, T> {
     const int stride_height = strides[0];
     const int stride_width = strides[1];
     const int padding_height = paddings[0];
-    const int padding_width = paddings[1];
+    const int padding_width = paddings[2];
 
     const int input_stride = input_height * input_width;
     const int output_stride = output_height * output_width;
 
-    const T* input_data = input->data<T>();
-    T* output_data = output->mutable_data<T>(lite::TargetType::kX86);
+    const T* input_data = input->template data<T>();
+    T* output_data = output->template mutable_data<T>(lite::TargetType::kX86);
 
     int hstart, hend;
     int wstart, wend;
@@ -67,8 +67,8 @@ class Pool2dFunctor<lite::TargetType::kX86, PoolProcess, T> {
             hend = AdaptEndIndex(ph, input_height, output_height);
           } else {
             hstart = ph * stride_height - padding_height;
-            hend = std::min(hstart + ksize_height, input_height);
-            hstart = std::max(hstart, 0);
+            hend = (std::min)(hstart + ksize_height, input_height);
+            hstart = (std::max)(hstart, 0);
           }
           for (int pw = 0; pw < output_width; ++pw) {
             if (adaptive) {
@@ -76,8 +76,8 @@ class Pool2dFunctor<lite::TargetType::kX86, PoolProcess, T> {
               wend = AdaptEndIndex(pw, input_width, output_width);
             } else {
               wstart = pw * stride_width - padding_width;
-              wend = std::min(wstart + ksize_width, input_width);
-              wstart = std::max(wstart, 0);
+              wend = (std::min)(wstart + ksize_width, input_width);
+              wstart = (std::max)(wstart, 0);
             }
 
             T ele = pool_process.initial();
@@ -130,14 +130,15 @@ class Pool2dGradFunctor<lite::TargetType::kX86, PoolProcess, T> {
     const int stride_height = strides[0];
     const int stride_width = strides[1];
     const int padding_height = paddings[0];
-    const int padding_width = paddings[1];
+    const int padding_width = paddings[2];
     const int input_stride = input_height * input_width;
     const int output_stride = output_height * output_width;
 
     const T* input_data = input.data<T>();
     const T* output_data = output.data<T>();
     const T* output_grad_data = output_grad.data<T>();
-    T* input_grad_data = input_grad->mutable_data<T>(lite::TargetType::kX86);
+    T* input_grad_data =
+        input_grad->template mutable_data<T>(lite::TargetType::kX86);
 
     int hstart, hend;
     int wstart, wend;
@@ -149,8 +150,8 @@ class Pool2dGradFunctor<lite::TargetType::kX86, PoolProcess, T> {
             hend = AdaptEndIndex(ph, input_height, output_height);
           } else {
             hstart = ph * stride_height - padding_height;
-            hend = std::min(hstart + ksize_height, input_height);
-            hstart = std::max(hstart, 0);
+            hend = (std::min)(hstart + ksize_height, input_height);
+            hstart = (std::max)(hstart, 0);
           }
           for (int pw = 0; pw < output_width; ++pw) {
             if (adaptive) {
@@ -158,8 +159,8 @@ class Pool2dGradFunctor<lite::TargetType::kX86, PoolProcess, T> {
               wend = AdaptEndIndex(pw, input_width, output_width);
             } else {
               wstart = pw * stride_width - padding_width;
-              wend = std::min(wstart + ksize_width, input_width);
-              wstart = std::max(wstart, 0);
+              wend = (std::min)(wstart + ksize_width, input_width);
+              wstart = (std::max)(wstart, 0);
             }
             int pool_size = (exclusive || adaptive)
                                 ? (hend - hstart) * (wend - wstart)
@@ -213,25 +214,26 @@ class MaxPool2dGradFunctor<lite::TargetType::kX86, T> {
     const int stride_height = strides[0];
     const int stride_width = strides[1];
     const int padding_height = paddings[0];
-    const int padding_width = paddings[1];
+    const int padding_width = paddings[2];
     const int input_stride = input_height * input_width;
     const int output_stride = output_height * output_width;
 
     const T* input_data = input.data<T>();
     const T* output_data = output.data<T>();
     const T* output_grad_data = output_grad.data<T>();
-    T* input_grad_data = input_grad->mutable_data<T>(lite::TargetType::kX86);
+    T* input_grad_data =
+        input_grad->template mutable_data<T>(lite::TargetType::kX86);
 
     for (int i = 0; i < batch_size; i++) {
       for (int c = 0; c < output_channels; ++c) {
         for (int ph = 0; ph < output_height; ++ph) {
           int hstart = ph * stride_height - padding_height;
-          int hend = std::min(hstart + ksize_height, input_height);
-          hstart = std::max(hstart, 0);
+          int hend = (std::min)(hstart + ksize_height, input_height);
+          hstart = (std::max)(hstart, 0);
           for (int pw = 0; pw < output_width; ++pw) {
             int wstart = pw * stride_width - padding_width;
-            int wend = std::min(wstart + ksize_width, input_width);
-            wstart = std::max(wstart, 0);
+            int wend = (std::min)(wstart + ksize_width, input_width);
+            wstart = (std::max)(wstart, 0);
 
             bool stop = false;
             for (int h = hstart; h < hend && !stop; ++h) {
@@ -322,7 +324,7 @@ class Pool3dFunctor<lite::TargetType::kX86, PoolProcess, T> {
     const int output_stride = output_depth * output_height * output_width;
 
     const T* input_data = input.data<T>();
-    T* output_data = output->mutable_data<T>(lite::TargetType::kX86);
+    T* output_data = output->template mutable_data<T>(lite::TargetType::kX86);
 
     int dstart, dend;
     int hstart, hend;
@@ -335,8 +337,8 @@ class Pool3dFunctor<lite::TargetType::kX86, PoolProcess, T> {
             dend = AdaptEndIndex(pd, input_depth, output_depth);
           } else {
             dstart = pd * stride_depth - padding_depth;
-            dend = std::min(dstart + ksize_depth, input_depth);
-            dstart = std::max(dstart, 0);
+            dend = (std::min)(dstart + ksize_depth, input_depth);
+            dstart = (std::max)(dstart, 0);
           }
           for (int ph = 0; ph < output_height; ++ph) {
             if (adaptive) {
@@ -344,8 +346,8 @@ class Pool3dFunctor<lite::TargetType::kX86, PoolProcess, T> {
               hend = AdaptEndIndex(ph, input_height, output_height);
             } else {
               hstart = ph * stride_height - padding_height;
-              hend = std::min(hstart + ksize_height, input_height);
-              hstart = std::max(hstart, 0);
+              hend = (std::min)(hstart + ksize_height, input_height);
+              hstart = (std::max)(hstart, 0);
             }
             for (int pw = 0; pw < output_width; ++pw) {
               if (adaptive) {
@@ -353,8 +355,8 @@ class Pool3dFunctor<lite::TargetType::kX86, PoolProcess, T> {
                 wend = AdaptEndIndex(pw, input_width, output_width);
               } else {
                 wstart = pw * stride_width - padding_width;
-                wend = std::min(wstart + ksize_width, input_width);
-                wstart = std::max(wstart, 0);
+                wend = (std::min)(wstart + ksize_width, input_width);
+                wstart = (std::max)(wstart, 0);
               }
               int output_idx = (pd * output_height + ph) * output_width + pw;
               T ele = pool_process.initial();
@@ -425,7 +427,8 @@ class Pool3dGradFunctor<lite::TargetType::kX86, PoolProcess, T> {
     const T* input_data = input.data<T>();
     const T* output_data = output.data<T>();
     const T* output_grad_data = output_grad.data<T>();
-    T* input_grad_data = input_grad->mutable_data<T>(lite::TargetType::kX86);
+    T* input_grad_data =
+        input_grad->template mutable_data<T>(lite::TargetType::kX86);
 
     int dstart, dend;
     int hstart, hend;
@@ -438,8 +441,8 @@ class Pool3dGradFunctor<lite::TargetType::kX86, PoolProcess, T> {
             dend = AdaptEndIndex(pd, input_depth, output_depth);
           } else {
             dstart = pd * stride_depth - padding_depth;
-            dend = std::min(dstart + ksize_depth, input_depth);
-            dstart = std::max(dstart, 0);
+            dend = (std::min)(dstart + ksize_depth, input_depth);
+            dstart = (std::max)(dstart, 0);
           }
           for (int ph = 0; ph < output_height; ++ph) {
             if (adaptive) {
@@ -447,8 +450,8 @@ class Pool3dGradFunctor<lite::TargetType::kX86, PoolProcess, T> {
               hend = AdaptEndIndex(ph, input_height, output_height);
             } else {
               hstart = ph * stride_height - padding_height;
-              hend = std::min(hstart + ksize_height, input_height);
-              hstart = std::max(hstart, 0);
+              hend = (std::min)(hstart + ksize_height, input_height);
+              hstart = (std::max)(hstart, 0);
             }
             for (int pw = 0; pw < output_width; ++pw) {
               if (adaptive) {
@@ -456,8 +459,8 @@ class Pool3dGradFunctor<lite::TargetType::kX86, PoolProcess, T> {
                 wend = AdaptEndIndex(pw, input_width, output_width);
               } else {
                 wstart = pw * stride_width - padding_width;
-                wend = std::min(wstart + ksize_width, input_width);
-                wstart = std::max(wstart, 0);
+                wend = (std::min)(wstart + ksize_width, input_width);
+                wstart = (std::max)(wstart, 0);
               }
 
               int pool_size =
@@ -530,22 +533,23 @@ class MaxPool3dGradFunctor<lite::TargetType::kX86, T> {
     const T* input_data = input.data<T>();
     const T* output_data = output.data<T>();
     const T* output_grad_data = output_grad.data<T>();
-    T* input_grad_data = input_grad->mutable_data<T>(lite::TargetType::kX86);
+    T* input_grad_data =
+        input_grad->template mutable_data<T>(lite::TargetType::kX86);
 
     for (int i = 0; i < batch_size; i++) {
       for (int c = 0; c < output_channels; ++c) {
         for (int pd = 0; pd < output_depth; ++pd) {
           int dstart = pd * stride_depth - padding_depth;
-          int dend = std::min(dstart + ksize_depth, input_depth);
-          dstart = std::max(dstart, 0);
+          int dend = (std::min)(dstart + ksize_depth, input_depth);
+          dstart = (std::max)(dstart, 0);
           for (int ph = 0; ph < output_height; ++ph) {
             int hstart = ph * stride_height - padding_height;
-            int hend = std::min(hstart + ksize_height, input_height);
-            hstart = std::max(hstart, 0);
+            int hend = (std::min)(hstart + ksize_height, input_height);
+            hstart = (std::max)(hstart, 0);
             for (int pw = 0; pw < output_width; ++pw) {
               int wstart = pw * stride_width - padding_width;
-              int wend = std::min(wstart + ksize_width, input_width);
-              wstart = std::max(wstart, 0);
+              int wend = (std::min)(wstart + ksize_width, input_width);
+              wstart = (std::max)(wstart, 0);
               bool stop = false;
               for (int d = dstart; d < dend && !stop; ++d) {
                 for (int h = hstart; h < hend && !stop; ++h) {
@@ -629,7 +633,7 @@ class MaxPool2dWithIndexFunctor<lite::TargetType::kX86, T1, T2> {
     const int stride_height = strides[0];
     const int stride_width = strides[1];
     const int padding_height = paddings[0];
-    const int padding_width = paddings[1];
+    const int padding_width = paddings[2];
     const int input_stride = input_height * input_width;
     const int output_stride = output_height * output_width;
 
@@ -647,8 +651,8 @@ class MaxPool2dWithIndexFunctor<lite::TargetType::kX86, T1, T2> {
             hend = AdaptEndIndex(ph, input_height, output_height);
           } else {
             hstart = ph * stride_height - padding_height;
-            hend = std::min(hstart + ksize_height, input_height);
-            hstart = std::max(hstart, 0);
+            hend = (std::min)(hstart + ksize_height, input_height);
+            hstart = (std::max)(hstart, 0);
           }
           for (int pw = 0; pw < output_width; ++pw) {
             if (adaptive) {
@@ -656,8 +660,8 @@ class MaxPool2dWithIndexFunctor<lite::TargetType::kX86, T1, T2> {
               wend = AdaptEndIndex(pw, input_width, output_width);
             } else {
               wstart = pw * stride_width - padding_width;
-              wend = std::min(wstart + ksize_width, input_width);
-              wstart = std::max(wstart, 0);
+              wend = (std::min)(wstart + ksize_width, input_width);
+              wstart = (std::max)(wstart, 0);
             }
 
             T1 ele = static_cast<T1>(-FLT_MAX);
@@ -790,8 +794,8 @@ class MaxPool3dWithIndexFunctor<lite::TargetType::kX86, T1, T2> {
             dend = AdaptEndIndex(pd, input_depth, output_depth);
           } else {
             dstart = pd * stride_depth - padding_depth;
-            dend = std::min(dstart + ksize_depth, input_depth);
-            dstart = std::max(dstart, 0);
+            dend = (std::min)(dstart + ksize_depth, input_depth);
+            dstart = (std::max)(dstart, 0);
           }
           for (int ph = 0; ph < output_height; ++ph) {
             if (adaptive) {
@@ -799,8 +803,8 @@ class MaxPool3dWithIndexFunctor<lite::TargetType::kX86, T1, T2> {
               hend = AdaptEndIndex(ph, input_height, output_height);
             } else {
               hstart = ph * stride_height - padding_height;
-              hend = std::min(hstart + ksize_height, input_height);
-              hstart = std::max(hstart, 0);
+              hend = (std::min)(hstart + ksize_height, input_height);
+              hstart = (std::max)(hstart, 0);
             }
             for (int pw = 0; pw < output_width; ++pw) {
               if (adaptive) {
@@ -808,8 +812,8 @@ class MaxPool3dWithIndexFunctor<lite::TargetType::kX86, T1, T2> {
                 wend = AdaptEndIndex(pw, input_width, output_width);
               } else {
                 wstart = pw * stride_width - padding_width;
-                wend = std::min(wstart + ksize_width, input_width);
-                wstart = std::max(wstart, 0);
+                wend = (std::min)(wstart + ksize_width, input_width);
+                wstart = (std::max)(wstart, 0);
               }
 
               int output_idx = (pd * output_height + ph) * output_width + pw;

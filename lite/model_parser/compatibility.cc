@@ -11,19 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 #include "lite/model_parser/compatibility.h"
 
+#ifndef LITE_ON_TINY_PUBLISH
 #include "lite/core/type_system.h"
+#include "lite/model_parser/cpp_desc.h"
 #include "lite/model_parser/naive_buffer/block_desc.h"
 #include "lite/model_parser/naive_buffer/op_desc.h"
 #include "lite/model_parser/naive_buffer/program_desc.h"
 #include "lite/model_parser/naive_buffer/var_desc.h"
-#ifndef LITE_ON_TINY_PUBLISH
-#include "lite/model_parser/cpp/block_desc.h"
-#include "lite/model_parser/cpp/op_desc.h"
-#include "lite/model_parser/cpp/program_desc.h"
-#include "lite/model_parser/cpp/var_desc.h"
 #endif
 
 namespace paddle {
@@ -43,16 +39,16 @@ bool CompatibleChecker<T>::CheckKernelVersion(const std::string& type,
 }
 
 template <typename T>
-std::unordered_set<std::string> CompatibleChecker<T>::OpsType(T* program) {
+std::set<std::string> CompatibleChecker<T>::OpsType(T* program) {
   LOG(WARNING) << "OpsType() is not yet implemented.";
-  return std::unordered_set<std::string>();
+  return std::set<std::string>();
 }
 
 #ifndef LITE_ON_TINY_PUBLISH
 template <>
-std::unordered_set<std::string> CompatibleChecker<cpp::ProgramDesc>::OpsType(
+std::set<std::string> CompatibleChecker<cpp::ProgramDesc>::OpsType(
     cpp::ProgramDesc* program) {
-  std::unordered_set<std::string> ops_type;
+  std::set<std::string> ops_type;
   for (size_t i = 0; i < program->BlocksSize(); ++i) {
     auto* block = program->GetBlock<cpp::BlockDesc>(i);
     for (size_t j = 0; j < block->OpsSize(); ++j) {

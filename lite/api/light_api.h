@@ -18,6 +18,7 @@
  */
 #pragma once
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
@@ -39,13 +40,25 @@ namespace lite {
  */
 class LITE_API LightPredictor {
  public:
-  LightPredictor(
-      const std::string& model_dir,
-      const std::string& model_buffer = "",
-      const std::string& param_buffer = "",
-      bool model_from_memory = false,
-      lite_api::LiteModelType model_type = lite_api::LiteModelType::kProtobuf) {
+  // constructor function of LightPredictor, `lite_model_file` refers to data in
+  // model file or buffer,`model_from_memory` refers to whther to load model
+  // from memory.
+  LightPredictor(const std::string& lite_model_file,
+                 bool model_from_memory = false) {
     scope_ = std::make_shared<Scope>();
+    program_desc_ = std::make_shared<cpp::ProgramDesc>();
+    Build(lite_model_file, model_from_memory);
+  }
+
+  // NOTE: This is a deprecated API and will be removed in latter release.
+  LightPredictor(const std::string& model_dir,
+                 const std::string& model_buffer = "",
+                 const std::string& param_buffer = "",
+                 bool model_from_memory = false,
+                 lite_api::LiteModelType model_type =
+                     lite_api::LiteModelType::kNaiveBuffer) {
+    scope_ = std::make_shared<Scope>();
+    program_desc_ = std::make_shared<cpp::ProgramDesc>();
     Build(model_dir, model_buffer, param_buffer, model_type, model_from_memory);
   }
 
@@ -67,8 +80,13 @@ class LITE_API LightPredictor {
   std::vector<std::string> GetInputNames();
   std::vector<std::string> GetOutputNames();
   void PrepareFeedFetch();
+  Scope* scope() { return scope_.get(); }
 
  private:
+  void Build(const std::string& lite_model_file,
+             bool model_from_memory = false);
+
+  // NOTE: This is a deprecated API and will be removed in latter release.
   void Build(
       const std::string& model_dir,
       const std::string& model_buffer,
@@ -76,12 +94,15 @@ class LITE_API LightPredictor {
       lite_api::LiteModelType model_type = lite_api::LiteModelType::kProtobuf,
       bool model_from_memory = false);
 
-  void BuildRuntimeProgram(const cpp::ProgramDesc& prog);
+  void BuildRuntimeProgram(
+      const std::shared_ptr<const cpp::ProgramDesc>& program_desc);
+
+  void DequantizeWeight();
 
  private:
   std::shared_ptr<Scope> scope_;
   std::unique_ptr<RuntimeProgram> program_;
-  cpp::ProgramDesc cpp_program_desc_;
+  std::shared_ptr<cpp::ProgramDesc> program_desc_;
   std::vector<std::string> input_names_;
   std::vector<std::string> output_names_;
 };
@@ -97,7 +118,8 @@ class LightPredictorImpl : public lite_api::PaddlePredictor {
   void Run() override;
 
   std::shared_ptr<lite_api::PaddlePredictor> Clone() override;
-
+  std::shared_ptr<lite_api::PaddlePredictor> Clone(
+      const std::vector<std::string>& var_names) override;
   std::string GetVersion() const override;
   std::vector<std::string> GetInputNames() override;
   std::vector<std::string> GetOutputNames() override;

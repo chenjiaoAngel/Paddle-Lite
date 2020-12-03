@@ -39,12 +39,18 @@ void AssignValueCompute::Run() {
   int dtype = param.dtype;
   std::vector<float> fp32_values = param.fp32_values;
   std::vector<int> int32_values = param.int32_values;
+  std::vector<int64_t> int64_values = param.int64_values;
+  std::vector<int> bool_values = param.bool_values;
   auto* out = param.Out;
 
   if (dtype == static_cast<int>(lite::core::FluidType::INT32)) {
     TensorFromVector(int32_values, out);
   } else if (dtype == static_cast<int>(lite::core::FluidType::FP32)) {
     TensorFromVector(fp32_values, out);
+  } else if (dtype == static_cast<int>(lite::core::FluidType::INT64)) {
+    TensorFromVector(int64_values, out);
+  } else if (dtype == static_cast<int>(lite::core::FluidType::BOOL)) {
+    TensorFromVector(bool_values, out);
   } else {
     LOG(FATAL) << "Unsupported dtype for assign_value_op:" << dtype;
   }
@@ -58,9 +64,9 @@ void AssignValueCompute::Run() {
 
 REGISTER_LITE_KERNEL(assign_value,
                      kARM,
-                     kFloat,
+                     kAny,
                      kNCHW,
                      paddle::lite::kernels::arm::AssignValueCompute,
                      def)
-    .BindOutput("Out", {LiteType::GetTensorTy(TARGET(kARM))})
+    .BindOutput("Out", {LiteType::GetTensorTy(TARGET(kARM), PRECISION(kAny))})
     .Finalize();

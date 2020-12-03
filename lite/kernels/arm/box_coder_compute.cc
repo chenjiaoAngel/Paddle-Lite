@@ -158,20 +158,6 @@ void DecodeCenterSize(const Tensor* target_box,
 }
 
 void BoxCoderCompute::Run() {
-  /*
-  auto& param = Param<operators::BoxCoderParam>();
-  int axis = param.axis;
-  bool box_normalized = param.box_normalized;
-  std::string code_type = param.code_type;
-
-  lite::arm::math::box_coder(param.proposals,
-                             param.prior_box,
-                             param.prior_box_var,
-                             param.target_box,
-                             code_type,
-                             box_normalized,
-                             axis);
-  */
   auto& param = Param<operators::BoxCoderParam>();
   auto* prior_box = param.prior_box;
   auto* prior_box_var = param.prior_box_var;

@@ -139,6 +139,61 @@ class RsqrtCompute : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
   virtual ~RsqrtCompute() = default;
 };
 
+class SquareCompute : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+ public:
+  using param_t = operators::ActivationParam;
+
+  void Run() override;
+
+  virtual ~SquareCompute() = default;
+};
+
+class HardSwishCompute : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+ public:
+  using param_t = operators::ActivationParam;
+
+  void Run() override;
+
+  virtual ~HardSwishCompute() = default;
+};
+
+class ReciprocalCompute : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+ public:
+  using param_t = operators::ActivationParam;
+
+  void Run() override;
+
+  virtual ~ReciprocalCompute() = default;
+};
+
+class AbsCompute : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+ public:
+  using param_t = operators::ActivationParam;
+
+  void Run() override;
+
+  virtual ~AbsCompute() = default;
+};
+
+class ThresholdedReluCompute
+    : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+ public:
+  using param_t = operators::ActivationParam;
+
+  void Run() override;
+
+  virtual ~ThresholdedReluCompute() = default;
+};
+
+class EluCompute : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+ public:
+  using param_t = operators::ActivationParam;
+
+  void Run() override;
+
+  virtual ~EluCompute() = default;
+};
+
 }  // namespace arm
 }  // namespace kernels
 }  // namespace lite

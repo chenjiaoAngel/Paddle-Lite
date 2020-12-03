@@ -19,16 +19,16 @@
  */
 #pragma once
 
+#include <map>
 #include <string>
-#include <unordered_map>
 #include <vector>
 #include "lite/utils/cp_logging.h"
 #include "lite/utils/replace_stl/stream.h"
 #include "lite/utils/string.h"
 
 namespace paddle {
-namespace inference {
-namespace analysis {
+namespace lite {
+namespace mir {
 
 static size_t dot_node_counter{0};
 
@@ -157,11 +157,11 @@ class Dot {
   }
 
  private:
-  std::unordered_map<std::string, Node> nodes_;
+  std::map<std::string, Node> nodes_;
   std::vector<Edge> edges_;
   std::vector<Attr> attrs_;
 };
 
-}  // namespace analysis
-}  // namespace inference
+}  // namespace mir
+}  // namespace lite
 }  // namespace paddle

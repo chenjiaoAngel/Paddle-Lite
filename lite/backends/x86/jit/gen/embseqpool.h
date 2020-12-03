@@ -14,10 +14,10 @@
 
 #pragma once
 
-#include <glog/logging.h>
 #include <string>
 #include "lite/backends/x86/jit/gen/jitcode.h"
-#include "lite/utils/paddle_enforce.h"
+#include "lite/utils/cp_logging.h"
+#include "lite/utils/string.h"
 
 namespace paddle {
 namespace lite {
@@ -47,7 +47,7 @@ class EmbSeqPoolJitCode : public JitCode {
     } else if (type_ == SeqPoolType::kSqrt) {
       base += "_Sqrt";
     }
-    base += ("_W" + std::to_string(tbl_w_));
+    base += ("_W" + paddle::lite::to_string(tbl_w_));
     return base;
   }
   void genCode() override;

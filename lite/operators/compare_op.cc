@@ -26,11 +26,18 @@ bool CompareOp::CheckShape() const {
   return true;
 }
 
-bool CompareOp::InferShape() const {
+bool CompareOp::InferShapeImpl() const {
   CHECK_OR_FALSE(param_.Out);
   // TODO(Superjomn) Enable data sharing.
   auto input_dims = param_.X->dims();
-  param_.Out->Resize(input_dims);
+  std::vector<int64_t> new_dims;
+  if (input_dims.size() == 2 && input_dims[1] == 1) {
+    new_dims.push_back(input_dims[0]);
+    param_.Out->Resize(new_dims);
+  } else {
+    param_.Out->Resize(input_dims);
+  }
+  // param_.Out->Resize(input_dims);
   return true;
 }
 
@@ -54,7 +61,7 @@ bool CompareOp::AttachImpl(const cpp::OpDesc &opdesc, lite::Scope *scope) {
 }  // namespace paddle
 
 REGISTER_LITE_OP(equal, paddle::lite::operators::CompareOp);
-REGISTER_LITE_OP(notequal, paddle::lite::operators::CompareOp);
+REGISTER_LITE_OP(not_equal, paddle::lite::operators::CompareOp);
 REGISTER_LITE_OP(less_than, paddle::lite::operators::CompareOp);
 REGISTER_LITE_OP(less_equal, paddle::lite::operators::CompareOp);
 REGISTER_LITE_OP(greater_than, paddle::lite::operators::CompareOp);

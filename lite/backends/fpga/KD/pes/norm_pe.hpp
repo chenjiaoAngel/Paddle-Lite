@@ -23,6 +23,7 @@ limitations under the License. */
 
 namespace paddle {
 namespace zynqmp {
+
 class NormPE : public PE {
  public:
   bool init() {
@@ -72,8 +73,10 @@ class NormPE : public PE {
     input_float.mutableData<float>(FP32, param_.input->shape());
     float_out.mutableData<float>(FP32, param_.output->shape());
 
+    // param_.input->syncToDevice();
     input_float.copyFrom(param_.input);
     input_float.syncToCPU();
+    // input_float.saveToFile("normalize_", true);
 
     int channel = input_float.shape().channel();
     int height = input_float.shape().height();
@@ -85,6 +88,7 @@ class NormPE : public PE {
     float* out_ptr = float_out.data<float>();
 
     int loop = height * width;
+#pragma omp parallel for
     for (int i = 0; i < loop; i++) {
       float sum = param_.epsilon;
       for (int c = 0; c < channel; c++) {
@@ -98,11 +102,24 @@ class NormPE : public PE {
       }
     }
     float_out.flush();
+    // float_out.saveToFile("normalize_", true);
     param_.output->copyFrom(&float_out);
   }
 
   bool dispatch() {
-    cpuCompute();
+    // cpuCompute();
+    // std::cout << "FPGA normalize ---------------------" << std::endl;
+
+    param_.input->syncToDevice();
+    config_norm_param(norm_param_args_);
+    inplace_args_.normalize_enable = true;
+    config_inplace(inplace_args_);
+
+    perform_bypass(bypass_args_);
+    inplace_args_.normalize_enable = false;
+    config_inplace(inplace_args_);
+    compute_norm(norm_args_);
+
     return true;
   }
 
@@ -117,5 +134,6 @@ class NormPE : public PE {
 
   NormalizeArgs norm_args_ = {0};
 };
+
 }  // namespace zynqmp
 }  // namespace paddle

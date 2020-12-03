@@ -15,7 +15,11 @@
 #include "lite/core/profile/basic_profiler.h"
 #include <map>
 #include <string>
-
+#ifdef LITE_WITH_XCODE
+const char* FLAGS_time_profile_file = "time_profile.txt";
+const char* FLAGS_time_profile_summary_file = "time_profile_summary.txt";
+const char* FLAGS_time_profile_unit = "ms";
+#else
 DEFINE_string(time_profile_file,
               "time_profile.txt",
               "Lite time profile information dump file");
@@ -27,7 +31,7 @@ DEFINE_string(time_profile_summary_file,
 DEFINE_string(time_profile_unit,
               "ms",
               "Unit of time in profile infomation, ms or us");
-
+#endif
 namespace paddle {
 namespace lite {
 namespace profile {
@@ -91,12 +95,21 @@ const TimerInfo& BasicTimer::GetTimerInfo(const std::string& key) const {
   return iter->second;
 }
 
-void BasicTimer::Log(TimerInfo* timer_info, uint32_t timespan) {
+void BasicTimer::SetWarmup(int warmup_times) {
+  CHECK_GE(warmup_times, 0) << "warmup times must >= 0";
+  warmup_ = warmup_times;
+}
+
+void BasicTimer::Log(TimerInfo* timer_info, uint64_t timespan) {
+  if (warmup_ > 0) {
+    --warmup_;
+    return;
+  }
   CHECK(timer_info);
+  timer_info->count_++;
   timer_info->total_ += timespan;
   timer_info->max_ = std::max(timer_info->max_, timespan);
   timer_info->min_ = std::min(timer_info->min_, timespan);
-  timer_info->count_++;
 }
 
 std::string BasicTimer::basic_repr_header() {
@@ -128,13 +141,13 @@ std::string BasicTimer::basic_repr() const {
   // clang-format off
   ss << GetCustomInfo("op_type")                    << "\t"
      << key()                                       << "\t"
-     << kernel_timer_info.ave() / time_unit_factor  << "\t"
-     << kernel_timer_info.min() / time_unit_factor  << "\t"
-     << kernel_timer_info.max() / time_unit_factor  << "\t"
-     << inst_timer_info.ave()   / time_unit_factor  << "\t"
-     << inst_timer_info.min()   / time_unit_factor  << "\t"
-     << inst_timer_info.max()   / time_unit_factor  << "\t"
-     << inst_timer_info.count()                     << "\t"
+     << kernel_timer_info.Ave() / time_unit_factor  << "\t"
+     << kernel_timer_info.Min() / time_unit_factor  << "\t"
+     << kernel_timer_info.Max() / time_unit_factor  << "\t"
+     << inst_timer_info.Ave()   / time_unit_factor  << "\t"
+     << inst_timer_info.Min()   / time_unit_factor  << "\t"
+     << inst_timer_info.Max()   / time_unit_factor  << "\t"
+     << inst_timer_info.Count()                     << "\t"
      << GetCustomInfo("op_info");
   // clang-format on
   return ss.str();
@@ -186,13 +199,13 @@ std::string BasicProfiler<TimerT>::summary_repr() const {
     auto& op_timer = iter.second;
     // clang-format off
     ss << iter.first                             << "\t"
-       << op_timer.ave()   / time_unit_factor    << "\t"
-       << op_timer.min()   / time_unit_factor    << "\t"
-       << op_timer.max()   / time_unit_factor    << "\t"
-       << op_timer.total() / time_unit_factor    << "\t"
+       << op_timer.Ave()   / time_unit_factor    << "\t"
+       << op_timer.Min()   / time_unit_factor    << "\t"
+       << op_timer.Max()   / time_unit_factor    << "\t"
+       << op_timer.Total() / time_unit_factor    << "\t"
        << total            / time_unit_factor    << "\t"
-       << (op_timer.total() * 1. / total * 100)  << "%\t"
-       << op_timer.count()                       << "\t"
+       << (op_timer.Total() * 1. / total * 100)  << "%\t"
+       << op_timer.Count()                       << "\t"
        << "\n";
     // clang-format on
   }

@@ -35,6 +35,7 @@
 
 build/
 build_fpga/
+docs/_build/
 
 .idea/
 
@@ -45,7 +46,6 @@ CMakeFiles/
 Makefile
 
 cmake_install.cmake
-
 
 *.cbp
 
@@ -61,6 +61,16 @@ cmake-build-release/
 test/models/
 
 test/images/
+
+*.pyc
+
+# model
+*.nb
+*.svg
+*.dot
+
+# vim intermediate files
+*.swp
 
 # Emacs intermediate files
 *~
@@ -104,3 +114,11 @@ metal/paddle-mobile-demo/paddle-mobile-demo/Resources
 metal/paddle-mobile-demo/paddle-mobile-demo/Resources/images
 metal/paddle-mobile-demo/paddle-mobile-demo/Resources/models
 metal/MobileNetDemo/MobileNetDemo/Resources
+
+#flatbuffers
+lite/model_parser/flatbuffers/framework_generated.h
+
+build*
+
+# hiai libs
+ai_ddk_lib*

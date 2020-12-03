@@ -59,7 +59,7 @@ void Module::AddHeaderIncludeGenCode() {
   Line("#include \"lite/gen_code/paddle_infer.h\"");
   Line("#include \"lite/core/op_registry.h\"");
   Line("#include \"lite/core/scope.h\"");
-  Line("#include \"lite/model_parser/cpp/op_desc.h\"");
+  Line("#include \"lite/model_parser/cpp_desc.h\"");
   Line("");
   Line("");
 }
@@ -111,11 +111,11 @@ void Module::AddOpDescHelper(const std::string &op_id,
 
     switch (type) {
       case AttrType::INT:
-        return std::to_string(desc.GetAttr<int>(name));
+        return paddle::lite::to_string(desc.GetAttr<int>(name));
       case AttrType::FLOAT:
-        return std::to_string(desc.GetAttr<float>(name));
+        return paddle::lite::to_string(desc.GetAttr<float>(name));
       case AttrType::BOOLEAN:
-        return std::to_string(desc.GetAttr<bool>(name));
+        return paddle::lite::to_string(desc.GetAttr<bool>(name));
       case AttrType::STRING:
         return "\"" + desc.GetAttr<std::string>(name) + "\"";
       case AttrType::FLOATS: {

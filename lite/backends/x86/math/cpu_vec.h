@@ -17,7 +17,7 @@ limitations under the License. */
 #include <functional>
 #include <string>
 #include "lite/backends/x86/cpu_info.h"
-#include "lite/utils/paddle_enforce.h"
+#include "lite/utils/cp_logging.h"
 
 #ifdef PADDLE_WITH_MKLML
 #include "lite/backends/x86/mklml.h"
@@ -53,6 +53,11 @@ inline void vec_scal(const int n, const T a, T* x) {
 }
 
 #ifdef PADDLE_WITH_MKLML
+
+#ifndef LITE_WITH_STATIC_MKL
+using namespace lite::x86;  // NOLINT
+#endif
+
 template <>
 inline void vec_exp<float>(const int n, const float* x, float* y) {
   constexpr int small_enough = 128;
@@ -61,23 +66,23 @@ inline void vec_exp<float>(const int n, const float* x, float* y) {
       y[i] = std::exp(x[i]);
     }
   } else {
-    lite::x86::vsExp(n, x, y);
+    vsExp(n, x, y);
   }
 }
 
 template <>
 inline void vec_exp<double>(const int n, const double* x, double* y) {
-  lite::x86::vdExp(n, x, y);
+  vdExp(n, x, y);
 }
 
 template <>
 inline void vec_scal<float>(const int n, const float a, float* x) {
-  lite::x86::cblas_sscal(n, a, x, 1);
+  cblas_sscal(n, a, x, 1);
 }
 
 template <>
 inline void vec_scal<double>(const int n, const double a, double* x) {
-  lite::x86::cblas_dscal(n, a, x, 1);
+  cblas_dscal(n, a, x, 1);
 }
 #endif
 
@@ -652,7 +657,7 @@ class VecActivations {
     } else if (type == "identity" || type == "") {
       return vec_identity<T, isa>;
     }
-    PADDLE_THROW("Not support type: %s", type);
+    LOG(FATAL) << "Not support type: " << type;
   }
 };
 

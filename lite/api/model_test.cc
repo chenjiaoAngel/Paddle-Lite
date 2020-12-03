@@ -12,28 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <gflags/gflags.h>
+#include <sstream>
 #include <string>
 #include <vector>
 #include "lite/api/paddle_api.h"
-#include "lite/api/paddle_use_kernels.h"
-#include "lite/api/paddle_use_ops.h"
-#include "lite/api/paddle_use_passes.h"
 #include "lite/api/test_helper.h"
 #include "lite/core/device_info.h"
-#include "lite/tests/utils/timer.h"
+#include "lite/core/profile/timer.h"
 #include "lite/utils/cp_logging.h"
 #include "lite/utils/string.h"
+#ifdef LITE_WITH_PROFILE
+#include "lite/core/profile/basic_profiler.h"
+#endif  // LITE_WITH_PROFILE
+#include <gflags/gflags.h>
 
-using paddle::lite::Timer;
+using paddle::lite::profile::Timer;
 
 DEFINE_string(input_shape,
               "1,3,224,224",
               "input shapes, separated by colon and comma");
-
 DEFINE_bool(use_optimize_nb,
             false,
             "optimized & naive buffer model for mobile devices");
+DEFINE_string(backend,
+              "arm_cpu",
+              "choose backend for valid_places: arm_cpu | opencl. Compile "
+              "OpenCL version if you choose opencl");
+DEFINE_string(arg_name, "", "the arg name");
+DEFINE_string(in_txt, "", "input text");
+DEFINE_string(out_txt, "", "output text");
 
 namespace paddle {
 namespace lite_api {
@@ -43,10 +50,25 @@ void OutputOptModel(const std::string& load_model_dir,
                     const std::vector<std::vector<int64_t>>& input_shapes) {
   lite_api::CxxConfig config;
   config.set_model_dir(load_model_dir);
-  config.set_valid_places({
-      Place{TARGET(kX86), PRECISION(kFloat)},
-      Place{TARGET(kARM), PRECISION(kFloat)},
-  });
+#ifdef LITE_WITH_X86
+  config.set_valid_places({Place{TARGET(kX86), PRECISION(kFloat)},
+                           Place{TARGET(kX86), PRECISION(kInt64)},
+                           Place{TARGET(kHost), PRECISION(kFloat)}});
+#else
+  if (FLAGS_backend == "opencl") {
+    config.set_valid_places({
+        Place{TARGET(kOpenCL), PRECISION(kFP16), DATALAYOUT(kImageDefault)},
+        Place{TARGET(kOpenCL), PRECISION(kFloat), DATALAYOUT(kNCHW)},
+        Place{TARGET(kOpenCL), PRECISION(kAny), DATALAYOUT(kImageDefault)},
+        Place{TARGET(kOpenCL), PRECISION(kAny), DATALAYOUT(kNCHW)},
+        TARGET(kARM),  // enable kARM CPU kernel when no opencl kernel
+    });
+  } else {  // arm_cpu
+    config.set_valid_places({
+        Place{TARGET(kARM), PRECISION(kFloat)},
+    });
+  }
+#endif
   auto predictor = lite_api::CreatePaddlePredictor(config);
 
   // delete old optimized model
@@ -70,11 +92,20 @@ void Run(const std::vector<std::vector<int64_t>>& input_shapes,
          const int repeat,
          const int warmup_times = 0) {
   lite_api::MobileConfig config;
-  config.set_model_dir(model_dir);
+  config.set_model_from_file(model_dir + ".nb");
   config.set_power_mode(power_mode);
   config.set_threads(thread_num);
 
   auto predictor = lite_api::CreatePaddlePredictor(config);
+  bool flag_in = true;
+  bool flag_out = true;
+  if (FLAGS_in_txt == "") {
+    flag_in = false;
+  }
+  if (FLAGS_out_txt == "") {
+    flag_out = false;
+  }
+  printf("flag_in: %d, flag_out: %d \n", flag_in, flag_out);
 
   for (int j = 0; j < input_shapes.size(); ++j) {
     auto input_tensor = predictor->GetInput(j);
@@ -84,8 +115,19 @@ void Run(const std::vector<std::vector<int64_t>>& input_shapes,
     for (int i = 0; i < input_shapes[j].size(); ++i) {
       input_num *= input_shapes[j][i];
     }
+    FILE* fp_r = nullptr;
+    if (flag_in) {
+      fp_r = fopen(FLAGS_in_txt.c_str(), "r");
+    }
     for (int i = 0; i < input_num; ++i) {
-      input_data[i] = 1.f;
+      if (flag_in) {
+        fscanf(fp_r, "%f\n", &input_data[i]);
+      } else {
+        input_data[i] = 1.f;
+      }
+    }
+    if (flag_in) {
+      fclose(fp_r);
     }
   }
 
@@ -95,31 +137,92 @@ void Run(const std::vector<std::vector<int64_t>>& input_shapes,
 
   Timer ti;
   for (int j = 0; j < repeat; ++j) {
-    ti.start();
+    ti.Start();
     predictor->Run();
-    ti.end();
-    LOG(INFO) << "iter: " << j << ", time: " << ti.latest_time() << " ms";
+    float t = ti.Stop();
+    LOG(INFO) << "iter: " << j << ", time: " << t << " ms";
   }
 
   LOG(INFO) << "================== Speed Report ===================";
   LOG(INFO) << "Model: " << model_dir
             << ", power_mode: " << static_cast<int>(power_mode)
             << ", threads num " << thread_num << ", warmup: " << warmup_times
-            << ", repeats: " << repeat << ", avg time: " << ti.get_average_ms()
+            << ", repeats: " << repeat << ", avg time: " << ti.LapTimes().Avg()
             << " ms"
-            << ", min time: " << ti.get_min_time() << " ms"
-            << ", max time: " << ti.get_max_time() << " ms.";
+            << ", min time: " << ti.LapTimes().Min() << " ms"
+            << ", max time: " << ti.LapTimes().Max() << " ms.";
 
-  auto output = predictor->GetOutput(0);
-  auto out = output->data<float>();
-  LOG(INFO) << "out " << out[0];
-  LOG(INFO) << "out " << out[1];
-  auto output_shape = output->shape();
-  int output_num = 1;
-  for (int i = 0; i < output_shape.size(); ++i) {
-    output_num *= output_shape[i];
+  // output summary
+  size_t output_tensor_num = predictor->GetOutputNames().size();
+  LOG(INFO) << "output tensor num:" << output_tensor_num;
+
+  for (size_t tidx = 0; tidx < output_tensor_num; ++tidx) {
+    auto output_tensor = predictor->GetOutput(tidx);
+    LOG(INFO) << "============= output tensor " << tidx << " =============";
+    auto tensor_shape = output_tensor->shape();
+    std::string tensor_shape_str{""};
+    int output_tensor_numel = 1;
+    for (int i = 0; i < tensor_shape.size(); ++i) {
+      output_tensor_numel *= tensor_shape[i];
+      tensor_shape_str += std::to_string(tensor_shape[i]);
+      tensor_shape_str += (i < tensor_shape.size() - 1) ? "x" : "";
+    }
+    auto out_data = output_tensor->data<float>();
+    auto out_mean =
+        paddle::lite::compute_mean<float>(out_data, output_tensor_numel);
+    auto out_std_dev = paddle::lite::compute_standard_deviation<float>(
+        out_data, output_tensor_numel, true, out_mean);
+    FILE* fp1 = nullptr;
+    if (flag_out) {
+      fp1 = fopen(FLAGS_out_txt.c_str(), "w");
+    }
+    double sum1 = 0.f;
+    for (int i = 0; i < output_tensor_numel; ++i) {
+      if (flag_out) {
+        fprintf(fp1, "%f\n", out_data[i]);
+      }
+      sum1 += out_data[i];
+    }
+    if (flag_out) {
+      fclose(fp1);
+    }
+    printf("out mean: %f \n", sum1 / output_tensor_numel);
+
+    LOG(INFO) << "output tensor " << tidx << " dims:" << tensor_shape_str;
+    LOG(INFO) << "output tensor " << tidx
+              << " elements num:" << output_tensor_numel;
+    LOG(INFO) << "output tensor " << tidx
+              << " standard deviation:" << out_std_dev;
+    LOG(INFO) << "output tensor " << tidx << " mean value:" << out_mean << "\n";
+
+    // print result
+    for (int i = 0; i < output_tensor_numel; ++i) {
+      VLOG(2) << "output_tensor->data<float>()[" << i
+              << "]:" << output_tensor->data<float>()[i];
+    }
   }
-  LOG(INFO) << "output_num: " << output_num;
+
+  // please turn off memory_optimize_pass to use this feature.
+  if (FLAGS_arg_name != "") {
+    auto arg_tensor = predictor->GetTensor(FLAGS_arg_name);
+    auto arg_shape = arg_tensor->shape();
+    int arg_num = 1;
+    std::ostringstream os;
+    os << "{";
+    for (int i = 0; i < arg_shape.size(); ++i) {
+      arg_num *= arg_shape[i];
+      os << arg_shape[i] << ",";
+    }
+    os << "}";
+    float sum = 0.;
+    std::ofstream out(FLAGS_arg_name + ".txt");
+    for (size_t i = 0; i < arg_num; ++i) {
+      sum += arg_tensor->data<float>()[i];
+      out << paddle::lite::to_string(arg_tensor->data<float>()[i]) << "\n";
+    }
+    LOG(INFO) << FLAGS_arg_name << " shape is " << os.str()
+              << ", mean value is " << sum * 1. / arg_num;
+  }
 }
 #endif
 
@@ -133,6 +236,7 @@ int main(int argc, char** argv) {
               << "--model_dir /path/to/your/model";
     exit(0);
   }
+
   std::string save_optimized_model_dir = "";
   if (FLAGS_use_optimize_nb) {
     save_optimized_model_dir = FLAGS_model_dir;
@@ -175,7 +279,7 @@ int main(int argc, char** argv) {
   LOG(INFO) << "input shapes: " << FLAGS_input_shape;
   std::vector<std::string> str_input_shapes = split_string(FLAGS_input_shape);
   std::vector<std::vector<int64_t>> input_shapes;
-  for (int i = 0; i < str_input_shapes.size(); ++i) {
+  for (size_t i = 0; i < str_input_shapes.size(); ++i) {
     LOG(INFO) << "input shape: " << str_input_shapes[i];
     input_shapes.push_back(get_shape(str_input_shapes[i]));
   }

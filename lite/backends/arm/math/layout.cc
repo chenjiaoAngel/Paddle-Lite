@@ -22,7 +22,10 @@ namespace lite {
 namespace arm {
 namespace math {
 #ifdef __aarch64__
+<<<<<<< HEAD
 
+=======
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 #define TRANS_C4                                                \
   "ld1 {v0.4s}, [%[din0_ptr]]   \n"                             \
   "ld1 {v1.4s}, [%[din1_ptr]]   \n"                             \
@@ -122,7 +125,10 @@ namespace math {
   "bne 1b \n"
 
 #else
+<<<<<<< HEAD
 
+=======
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 #define TRANS_C4                                                \
   "1: \n"                                                       \
   "vld1.32 {d0-d1}, [%[din0_ptr]] \n"                           \
@@ -220,8 +226,11 @@ void NCHW2NHWC<float>(int N, int C, int size, const float* X, float* Y) {
       float* out3_ptr = out2_ptr + C;
       int cnt_num = cnt;
       if (cnt_num > 0) {
+<<<<<<< HEAD
 // printf("din0_ptr: %x, din1_ptr: %x \n", din0_ptr, din1_ptr);
 // printf("out0_ptr: %x, out1_ptr: %x \n", out0_ptr, out1_ptr);
+=======
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 #ifdef __aarch64__
         asm volatile(TRANS_C4
                      : [din0_ptr] "+r"(din0_ptr),
@@ -362,6 +371,11 @@ void NCHW2NHWC<int8_t>(int N, int C, int size, const int8_t* X, int8_t* Y) {
                        "v14",
                        "v15");
 #else
+<<<<<<< HEAD
+=======
+#if 0  // TOOD(ysh329): caused assembly code error with register for armv7
+       // **clang** compile
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
         asm volatile(TRANS_C8
                      : [din0_ptr] "+r"(din0_ptr),
                        [din1_ptr] "+r"(din1_ptr),
@@ -380,6 +394,10 @@ void NCHW2NHWC<int8_t>(int N, int C, int size, const int8_t* X, int8_t* Y) {
                      :
                      : "cc", "memory", "q0", "q1", "q2", "q3");
 #endif
+<<<<<<< HEAD
+=======
+#endif
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       }
       // const int8_t* din_ptr = din + 8 * cnt * size + s; // remain channel
       for (int i = 0; i < remain; i++) {
@@ -482,6 +500,11 @@ void NHWC2NCHW<float>(int N, int C, int size, const float* X, float* Y) {
                        "v10",
                        "v11");
 #else
+<<<<<<< HEAD
+=======
+#if 0  // TOOD(ysh329): caused assembly code error with register for armv7
+       // **clang** compile
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
         asm volatile(TRANS_C4
                      : [din0_ptr] "+r"(din0_ptr),
                        [din1_ptr] "+r"(din1_ptr),
@@ -496,8 +519,13 @@ void NHWC2NCHW<float>(int N, int C, int size, const float* X, float* Y) {
                      :
                      : "cc", "memory", "q0", "q1", "q2", "q3");
 #endif
+<<<<<<< HEAD
       }
       //   const float* din_ptr = din + s + C * 4 * cnt;  // remain channel
+=======
+#endif
+      }
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       for (int i = 0; i < remain; i++) {
         const float* ptr = din0_ptr;
         *out0_ptr++ = *ptr++;
@@ -598,6 +626,11 @@ void NHWC2NCHW<int8_t>(int N, int C, int size, const int8_t* X, int8_t* Y) {
                        "v14",
                        "v15");
 #else
+<<<<<<< HEAD
+=======
+#if 0  // TOOD(ysh329): caused assembly code error with register for armv7
+       // **clang** compile
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
         asm volatile(TRANS_C8
                      : [din0_ptr] "+r"(din0_ptr),
                        [din1_ptr] "+r"(din1_ptr),
@@ -616,6 +649,10 @@ void NHWC2NCHW<int8_t>(int N, int C, int size, const int8_t* X, int8_t* Y) {
                      :
                      : "cc", "memory", "q0", "q1", "q2", "q3");
 #endif
+<<<<<<< HEAD
+=======
+#endif
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       }
       for (int i = 0; i < remain; i++) {
         const int8_t* ptr = din0_ptr;

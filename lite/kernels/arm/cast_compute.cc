@@ -31,15 +31,21 @@ void CastCompute::PrepareForRun() {}
 void CastCompute::Run() {
   auto& ctx = this->ctx_->template As<ARMContext>();
   auto& param = this->Param<operators::CastParam>();
-
   auto input_dims = param.X->dims();
-
+  if (param.X->precision() == PrecisionType::kFloat) {
+    param.in_dtype = 5;
+  }
   // BOOL = 0;INT16 = 1;INT32 = 2;INT64 = 3;FP16 = 4;FP32 = 5;FP64 = 6;
   // SIZE_T = 19;UINT8 = 20;INT8 = 21;
-  if (param.in_dtype == param.out_dtype && param.in_dtype == 2) {
+  if (param.in_dtype == param.out_dtype && param.in_dtype == 5) {
     const auto* x_data = param.X->data<float>();
     auto* o_data = param.Out->mutable_data<float>();
     memcpy(o_data, x_data, sizeof(float) * param.X->numel());
+  } else if (param.in_dtype == param.out_dtype &&
+             param.in_dtype == 3) {  // int64->int64
+    const auto* x_data = param.X->data<int64_t>();
+    auto* o_data = param.Out->mutable_data<int64_t>();
+    memcpy(o_data, x_data, sizeof(int64_t) * param.X->numel());
   } else if (param.in_dtype == 21 && param.out_dtype == 5) {  // int8->float32
     const char* x_data_begin = param.X->data<char>();
     const char* x_data_end = x_data_begin + param.X->numel();
@@ -49,18 +55,45 @@ void CastCompute::Run() {
     const int32_t* x_data_begin = param.X->data<int32_t>();
     const int32_t* x_data_end = x_data_begin + param.X->numel();
     float* out_data = param.Out->mutable_data<float>();
-    // std::transform(x_data_begin, x_data_end, out_data, TransOp<int32_t,
-    // float>);
-    // todo: the input type actually is float.
-    memcpy(out_data, x_data_begin, sizeof(float) * param.X->numel());
+    std::transform(x_data_begin, x_data_end, out_data, TransOp<int32_t, float>);
   } else if (param.in_dtype == 20 && param.out_dtype == 5) {  // uint8->float32
     const unsigned char* x_data_begin = param.X->data<unsigned char>();
     const unsigned char* x_data_end = x_data_begin + param.X->numel();
     float* out_data = param.Out->mutable_data<float>();
     std::transform(
         x_data_begin, x_data_end, out_data, TransOp<unsigned char, float>);
+  } else if (param.in_dtype == 3 && param.out_dtype == 2) {  // int64->int32
+    const int64_t* x_data_begin = param.X->data<int64_t>();
+    const int64_t* x_data_end = x_data_begin + param.X->numel();
+    int32_t* out_data = param.Out->mutable_data<int32_t>();
+    std::transform(
+        x_data_begin, x_data_end, out_data, TransOp<int64_t, int32_t>);
+  } else if (param.in_dtype == 0 && param.out_dtype == 5) {  // bool->fp32
+    const bool* x_data_begin = param.X->data<bool>();
+    const bool* x_data_end = x_data_begin + param.X->numel();
+    float* out_data = param.Out->mutable_data<float>();
+    std::transform(x_data_begin, x_data_end, out_data, TransOp<bool, float>);
+  } else if (param.in_dtype == 3 && param.out_dtype == 5) {  // int64->fp32
+    const int64_t* x_data_begin = param.X->data<int64_t>();
+    const int64_t* x_data_end = x_data_begin + param.X->numel();
+    float* out_data = param.Out->mutable_data<float>();
+    std::transform(x_data_begin, x_data_end, out_data, TransOp<int64_t, float>);
+  } else if (param.in_dtype == 2 && param.out_dtype == 3) {  // INT32 -> INT64
+    const int32_t* x_data_begin = param.X->data<int32_t>();
+    const int32_t* x_data_end = x_data_begin + param.X->numel();
+    int64_t* out_data = param.Out->mutable_data<int64_t>();
+    std::transform(
+        x_data_begin, x_data_end, out_data, TransOp<int32_t, int64_t>);
+  } else if (param.in_dtype == 5 &&
+             param.out_dtype == 20) {  // float32 -> uint8
+    const float* x_data_begin = param.X->data<float>();
+    const float* x_data_end = x_data_begin + param.X->numel();
+    unsigned char* out_data = param.Out->mutable_data<unsigned char>();
+    std::transform(
+        x_data_begin, x_data_end, out_data, TransOp<float, unsigned char>);
   } else {
-    LOG(FATAL) << "other has not been implemented";
+    LOG(FATAL) << "other has not been implemented transform with dtype"
+               << param.in_dtype << " X, dtype" << param.out_dtype << " Out";
   }
 }
 
@@ -70,7 +103,7 @@ void CastCompute::Run() {
 }  // namespace paddle
 
 REGISTER_LITE_KERNEL(
-    cast, kARM, kFloat, kNCHW, paddle::lite::kernels::arm::CastCompute, def)
-    .BindInput("X", {LiteType::GetTensorTy(TARGET(kARM))})
-    .BindOutput("Out", {LiteType::GetTensorTy(TARGET(kARM))})
+    cast, kARM, kAny, kNCHW, paddle::lite::kernels::arm::CastCompute, def)
+    .BindInput("X", {LiteType::GetTensorTy(TARGET(kARM), PRECISION(kAny))})
+    .BindOutput("Out", {LiteType::GetTensorTy(TARGET(kARM), PRECISION(kAny))})
     .Finalize();

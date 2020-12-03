@@ -14,7 +14,7 @@
 
 #pragma once
 
-#ifdef LITE_ON_TINY_PUBLISH
+#if defined(LITE_ON_TINY_PUBLISH) && !defined(LITE_WITH_XCODE)
 #include <stdlib.h>
 #include <string>
 #else
@@ -23,24 +23,31 @@
 #include <sstream>
 #endif
 
-#ifdef LITE_ON_TINY_PUBLISH
+#if defined(LITE_ON_TINY_PUBLISH) && !defined(LITE_WITH_XCODE)
 namespace paddle {
 namespace lite {
 
 namespace replace_stl {
 
+struct LiteIoWidth {
+  explicit LiteIoWidth(int value) : width(value) {}
+  int width;
+};
+
+static LiteIoWidth setw(int width) { return LiteIoWidth(width); }
+
 class ostream {
  public:
   ostream() {}
-  explicit ostream(const std::string& x) : _data(x) {}
+  explicit ostream(const std::string& x) : data_(x) {}
   ~ostream() {}
 
-  const char* c_str() { return _data.c_str(); }
+  const char* c_str() { return data_.c_str(); }
 
-  const std::string& str() { return _data; }
+  const std::string& str() { return data_; }
   const std::string& str(const std::string& x) {
-    _data = x;
-    return _data;
+    data_ = x;
+    return data_;
   }
 
   template <typename T>
@@ -50,7 +57,11 @@ class ostream {
   ostream& operator<<(const T* obj);
 
  private:
-  std::string _data;
+#ifdef LITE_WITH_LOG
+  void pad(const std::string& text);
+#endif
+  std::string data_;
+  int display_width_{-1};  // -1 refers to no setting
 };
 
 class stringstream : public ostream {

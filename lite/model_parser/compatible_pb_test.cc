@@ -14,10 +14,9 @@
 
 #include "lite/model_parser/compatible_pb.h"
 #include <gtest/gtest.h>
-#include "lite/model_parser/cpp/block_desc.h"
-#include "lite/model_parser/cpp/op_desc.h"
-#include "lite/model_parser/cpp/program_desc.h"
-#include "lite/model_parser/cpp/var_desc.h"
+#include "lite/model_parser/cpp_desc.h"
+#include "lite/model_parser/flatbuffers/program_desc.h"
+#include "lite/model_parser/flatbuffers/test_helper.h"
 #include "lite/model_parser/naive_buffer/block_desc.h"
 #include "lite/model_parser/naive_buffer/op_desc.h"
 #include "lite/model_parser/naive_buffer/program_desc.h"
@@ -36,6 +35,8 @@ void SetVarDesc(VarDescType* desc) {
   desc->SetName("X");
   desc->SetPersistable(true);
   desc->SetType(VarDescAPI::Type::LOD_TENSOR);
+  desc->SetShape({1, 3, 224, 224});
+  desc->SetDataType(VarDescAPI::VarDataType::FP32);
 }
 
 template <typename VarDescType>
@@ -43,6 +44,8 @@ void SetVarDesc1(VarDescType* desc) {
   desc->SetName("Y");
   desc->SetPersistable(false);
   desc->SetType(VarDescAPI::Type::SELECTED_ROWS);
+  desc->SetShape({1, 3, 224, 224});
+  desc->SetDataType(VarDescAPI::VarDataType::FP32);
 }
 
 template <typename VarDescType>
@@ -427,6 +430,15 @@ TEST(ProgramDesc, AnyToCpp) {
   naive_buffer::proto::ProgramDesc nb_proto_desc(&table);
   naive_buffer::ProgramDesc nb_desc(&nb_proto_desc);
   TestProgramAnyToCpp<naive_buffer::ProgramDesc>(&nb_desc);
+}
+
+TEST(ProgramDesc, FbsCpp) {
+  fbs::ProgramDesc fbs_program(fbs::test::GenerateProgramCache());
+  cpp::ProgramDesc cpp_program;
+  TransformProgramDescAnyToCpp(fbs_program, &cpp_program);
+  fbs::ProgramDesc fbs_program_2;
+  TransformProgramDescCppToAny(cpp_program, &fbs_program_2);
+  fbs::test::CheckProgramCache(&fbs_program_2);
 }
 
 }  // namespace lite

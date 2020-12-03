@@ -13,11 +13,25 @@
 // limitations under the License.
 
 #include "lite/core/context.h"
-
-#ifdef LITE_WITH_OPENCL
-DEFINE_string(cl_path, "/data/local/tmp/opencl", "The OpenCL kernels path.");
-#endif
+#include "lite/utils/macros.h"
 
 namespace paddle {
-namespace lite {}  // namespace lite
+namespace lite {
+
+#ifdef LITE_WITH_HUAWEI_ASCEND_NPU
+LITE_THREAD_LOCAL std::string
+    Context<TargetType::kHuaweiAscendNPU>::subgraph_model_cache_dir_{
+        ""};  // NOLINT
+LITE_THREAD_LOCAL int
+    Context<TargetType::kHuaweiAscendNPU>::huawei_ascend_device_id_{
+        0};  // NOLINT
+#endif
+
+#ifdef LITE_WITH_MLU
+int Context<TargetType::kMLU>::next_queue_id_{0};
+std::map<int, int> Context<TargetType::kMLU>::queue_id_map_;
+std::mutex Context<TargetType::kMLU>::map_mutex_;
+#endif
+
+}  // namespace lite
 }  // namespace paddle

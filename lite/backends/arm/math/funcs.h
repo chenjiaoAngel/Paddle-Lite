@@ -15,6 +15,7 @@
 #pragma once
 
 #include <arm_neon.h>
+
 #include <algorithm>
 #include <cmath>
 
@@ -25,10 +26,12 @@
 #include "lite/backends/arm/math/axpy.h"
 #include "lite/backends/arm/math/beam_search.h"
 #include "lite/backends/arm/math/box_coder.h"
+#include "lite/backends/arm/math/clip.h"
 #include "lite/backends/arm/math/col_im_transform.h"
 #include "lite/backends/arm/math/concat.h"
 #include "lite/backends/arm/math/conv_block_utils.h"
 #include "lite/backends/arm/math/conv_impl.h"
+#include "lite/backends/arm/math/conv_transpose_depthwise.h"
 #include "lite/backends/arm/math/decode_bboxes.h"
 #include "lite/backends/arm/math/dropout.h"
 #include "lite/backends/arm/math/elementwise.h"
@@ -44,15 +47,20 @@
 #include "lite/backends/arm/math/negative.h"
 #include "lite/backends/arm/math/norm.h"
 #include "lite/backends/arm/math/packed_sgemm.h"
+#include "lite/backends/arm/math/packed_sgemm_c4.h"
 #include "lite/backends/arm/math/pad2d.h"
 #include "lite/backends/arm/math/pooling.h"
 #include "lite/backends/arm/math/power.h"
 #include "lite/backends/arm/math/prior_box.h"
 #include "lite/backends/arm/math/reduce_max.h"
 #include "lite/backends/arm/math/reduce_mean.h"
+#include "lite/backends/arm/math/reduce_prod.h"
+#include "lite/backends/arm/math/reduce_sum.h"
 #include "lite/backends/arm/math/scale.h"
+#include "lite/backends/arm/math/scatter.h"
 #include "lite/backends/arm/math/sequence_expand.h"
 #include "lite/backends/arm/math/sequence_pool.h"
+#include "lite/backends/arm/math/sequence_pool_grad.h"
 #include "lite/backends/arm/math/sequence_softmax.h"
 #include "lite/backends/arm/math/sgemm.h"
 #include "lite/backends/arm/math/sgemv.h"
@@ -60,7 +68,7 @@
 #include "lite/backends/arm/math/slice.h"
 #include "lite/backends/arm/math/softmax.h"
 #include "lite/backends/arm/math/split.h"
-#include "lite/backends/arm/math/stack.h"
+#include "lite/backends/arm/math/split_merge_lod_tenosr.h"
 #include "lite/backends/arm/math/topk.h"
 #include "lite/backends/arm/math/yolo_box.h"
 
@@ -352,8 +360,18 @@ inline float32x4_t pow_ps(float32x4_t a, float32x4_t b) {
   return exp_ps(vmulq_f32(b, log_ps(a)));
 }
 
+inline float32x4_t vpaddq_f32(float32x4_t a, float32x4_t b) {
+  float32x4_t vrst;
+  vrst[0] = a[0] + a[1];
+  vrst[1] = a[2] + a[3];
+  vrst[2] = b[0] + b[1];
+  vrst[3] = b[2] + b[3];
+  return vrst;
+}
+
 template <typename T>
-void fill_bias_fc(T* tensor, const T* bias, int num, int channel);
+void fill_bias_fc(
+    T* tensor, const T* bias, int num, int channel, bool flag_relu);
 
 template <lite_api::ActivationType Act = lite_api::ActivationType::kIndentity>
 inline float32x4_t vactive_f32(const float32x4_t& x) {

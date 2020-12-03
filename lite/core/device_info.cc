@@ -54,11 +54,18 @@
 #include <algorithm>
 #include <limits>
 #include "lite/core/device_info.h"
+#include "lite/utils/macros.h"
 
 namespace paddle {
 namespace lite {
 
-#ifdef LITE_WITH_ARM
+#if ((defined LITE_WITH_ARM) || (defined LITE_WITH_MLU))
+LITE_THREAD_LOCAL lite_api::PowerMode DeviceInfo::mode_;
+LITE_THREAD_LOCAL ARMArch DeviceInfo::arch_;
+LITE_THREAD_LOCAL int DeviceInfo::mem_size_;
+LITE_THREAD_LOCAL std::vector<int> DeviceInfo::active_ids_;
+LITE_THREAD_LOCAL TensorLite DeviceInfo::workspace_;
+LITE_THREAD_LOCAL int64_t DeviceInfo::count_ = 0;
 
 #ifdef TARGET_IOS
 const int DEFAULT_L1_CACHE_SIZE = 64 * 1024;
@@ -73,7 +80,7 @@ const int DEFAULT_L3_CACHE_SIZE = 0;
 int get_cpu_num() {
 #ifdef LITE_WITH_LINUX
   // get cpu count from /sys/devices/system/cpu/cpunum/uevent
-  int max_cpu_num = 20;
+  int max_cpu_num = 128;
   int cpu_num = 0;
   for (int i = 0; i < max_cpu_num; ++i) {
     char path[256];
@@ -169,6 +176,9 @@ void get_cpu_arch(std::vector<ARMArch>* archs, const int cpu_num) {
         case 0xd0a:
           arch_type = kA75;
           break;
+        case 0xd0d:
+          arch_type = kA77;
+          break;
         case 0xd40:
           arch_type = kA76;
           break;
@@ -221,19 +231,24 @@ void get_cpu_arch(std::vector<ARMArch>* archs, const int cpu_num) {
 #ifdef LITE_WITH_LINUX
 
 std::string get_cpu_name() {
-  std::string cpu_name;
+  std::string cpu_name = "";
   FILE* fp = fopen("/proc/cpuinfo", "rb");
   if (!fp) {
     return "";
   }
   char line[1024];
+  bool first_model_name = true;
   while (!feof(fp)) {
     char* s = fgets(line, 1024, fp);
     if (!s) {
       break;
     }
     if (strstr(line, "Hardware") != NULL) {
-      cpu_name = std::string(line);
+      cpu_name += std::string(line);
+    }
+    if (strstr(line, "model name") != NULL && first_model_name) {
+      cpu_name += std::string(line);
+      first_model_name = false;
     }
   }
 #ifdef LITE_WITH_ANDROID
@@ -625,6 +640,20 @@ void DeviceInfo::SetArchInfo(int argc, ...) {
 
 bool DeviceInfo::SetCPUInfoByName() {
   /* Snapdragon */
+  if (dev_name_.find("KONA") != std::string::npos) {  // 865
+    core_num_ = 8;
+    core_ids_ = {0, 1, 2, 3, 4, 5, 6, 7};
+    big_core_ids_ = {4, 5, 6, 7};
+    little_core_ids_ = {0, 1, 2, 3};
+    cluster_ids_ = {1, 1, 1, 1, 0, 0, 0, 0};
+    SetArchInfo(2, kA77, kA55);
+    SetCacheInfo(0, 2, 192 * 1024, 256 * 1024);
+    SetCacheInfo(1, 2, 768 * 1024, 512 * 1024);
+    SetCacheInfo(2, 1, 4 * 1024 * 1024);
+    SetFP16Info(1, 1);
+    SetDotInfo(2, 1, 1);
+    return true;
+  }
   if (dev_name_.find("SM8150") != std::string::npos) {  // 855
     core_num_ = 8;
     core_ids_ = {0, 1, 2, 3, 4, 5, 6, 7};
@@ -810,6 +839,21 @@ bool DeviceInfo::SetCPUInfoByName() {
     SetFP16Info(1, 1);
     SetDotInfo(1, 1);
     return true;
+  } else if (dev_name_.find("FT2000PLUS") != std::string::npos) {
+    core_num_ = 64;
+    core_ids_.resize(core_num_);
+    big_core_ids_.resize(core_num_);
+    cluster_ids_.resize(core_num_);
+    for (int i = 0; i < core_num_; ++i) {
+      core_ids_[i] = i;
+      big_core_ids_[i] = i;
+      cluster_ids_[i] = 0;
+    }
+    little_core_ids_ = {};
+    SetCacheInfo(0, 1, 64 * 1024);
+    SetCacheInfo(1, 1, 32 * 1024 * 1024);
+    SetCacheInfo(2, 1, 128 * 1024 * 1024);
+    return true;
   }
   return false;
 }
@@ -912,7 +956,7 @@ void DeviceInfo::RequestPowerNoBindMode(int thread_num) {
     active_ids_ = core_ids_;
   } else {
     active_ids_.resize(thread_num);
-    for (int i = 0; i < thread_num; ++i) {
+    for (uint32_t i = 0; i < thread_num; ++i) {
       if (i < big_core_ids_.size()) {
         active_ids_[i] = big_core_ids_[i];
       } else {
@@ -982,6 +1026,8 @@ void DeviceInfo::RequestPowerRandLowMode(int shift_num, int thread_num) {
   }
 }
 
+bool DeviceInfo::set_a53_valid() { return has_a53_valid_; }
+
 int DeviceInfo::Setup() {
   core_num_ = get_cpu_num();
   mem_size_ = get_mem_size();
@@ -1025,6 +1071,13 @@ int DeviceInfo::Setup() {
     big_core_ids_[i] = i;
   }
 #endif
+  // xiaodu device_name
+  if (dev_name_.find("MT8765WA") != std::string::npos ||
+      dev_name_.find("MT8167S") != std::string::npos) {
+    has_a53_valid_ = false;
+  } else {
+    has_a53_valid_ = true;
+  }
   // output info
   LOG(INFO) << "ARM multiprocessors name: " << dev_name_;
   LOG(INFO) << "ARM multiprocessors number: " << core_num_;
@@ -1033,7 +1086,7 @@ int DeviceInfo::Setup() {
               << ", max freq: " << max_freqs_[i]
               << ", min freq: " << min_freqs_[i]
               << ", cluster ID: " << cluster_ids_[core_ids_[i]]
-              << ", CPU ARCH: A" << archs_[i];
+              << ", CPU ARCH: A" << static_cast<int>(archs_[i]);
   }
   LOG(INFO) << "L1 DataCache size is: ";
   for (int i = 0; i < core_num_; ++i) {
@@ -1087,7 +1140,7 @@ void DeviceInfo::SetRunMode(lite_api::PowerMode mode, int thread_num) {
       RequestPowerRandLowMode(shift_num, thread_num);
       break;
     default:
-      LOG(FATAL) << "Unsupported power mode: " << mode;
+      LOG(FATAL) << "Unsupported power mode: " << static_cast<int>(mode);
       break;
   }
   if (active_ids_.empty()) {
@@ -1132,6 +1185,52 @@ bool DeviceInfo::ExtendWorkspace(size_t size) {
 }
 
 #endif  // LITE_WITH_ARM
+
+#ifdef LITE_WITH_MLU
+void SetMluDevice(int device_id) {
+  LOG(INFO) << "Set mlu device " << device_id;
+  cnrtDev_t dev_handle;
+  CNRT_CALL(cnrtGetDeviceHandle(&dev_handle, device_id));
+  CNRT_CALL(cnrtSetCurrentDevice(dev_handle));
+}
+
+void Device<TARGET(kMLU)>::Init() {
+  SetMluDevice(idx_);
+  GetInfo();
+  CreateQueue();
+}
+
+void Device<TARGET(kMLU)>::GetInfo() {}
+
+void Device<TARGET(kMLU)>::CreateQueue() {
+  exec_queue_.clear();
+  io_queue_.clear();
+  for (size_t i = 0; i < max_queue_; ++i) {
+    cnrtQueue_t exec_queue;
+    cnrtQueue_t io_queue;
+    cnrtCreateQueue(&exec_queue);
+    cnrtCreateQueue(&io_queue);
+    exec_queue_.push_back(exec_queue);
+    io_queue_.push_back(io_queue);
+
+    cnrtCreateQueue(&exec_queue);
+    exec_queue_.push_back(exec_queue);
+  }
+}
+#endif  // LITE_WITH_MLU
+
+#ifdef LITE_WITH_BM
+void Device<TARGET(kBM)>::SetId(int device_id) {
+  LOG(INFO) << "Set bm device " << device_id;
+  TargetWrapper<TARGET(kBM)>::SetDevice(device_id);
+  idx_ = device_id;
+}
+
+void Device<TARGET(kBM)>::Init() { SetId(idx_); }
+int Device<TARGET(kBM)>::core_num() {
+  return TargetWrapper<TARGET(kBM)>::num_devices();
+}
+#endif  // LITE_WITH_BM
 
 #ifdef LITE_WITH_CUDA
 

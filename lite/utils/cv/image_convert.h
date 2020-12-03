@@ -13,13 +13,23 @@
 // limitations under the License.
 
 #pragma once
+<<<<<<< HEAD
 #include <stdint.h>
 #include "lite/utils/cv/cv_enum.h"
+=======
+
+#include <stdint.h>
+#include <stdio.h>
+#include "lite/utils/cv/paddle_image_preprocess.h"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 namespace paddle {
 namespace lite {
 namespace utils {
 namespace cv {
+<<<<<<< HEAD
 typedef paddle::lite::utils::cv::ImageFormat ImageFormat;
+=======
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 typedef void (*convert_func)(const uint8_t* src,
                              uint8_t* dst,
                              int srcw,

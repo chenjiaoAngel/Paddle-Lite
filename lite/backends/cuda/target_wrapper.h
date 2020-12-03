@@ -15,6 +15,7 @@
 #pragma once
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include "lite/backends/cuda/cuda_utils.h"
 #include "lite/core/target_wrapper.h"
 
 namespace paddle {
@@ -31,6 +32,16 @@ class TargetWrapper<TARGET(kCUDA)> {
   static size_t num_devices();
   static size_t maximum_stream() { return 0; }
 
+  static int GetComputeCapability() {
+    int dev_id = GetCurDevice();
+    int major, minor;
+    CUDA_CALL(cudaDeviceGetAttribute(
+        &major, cudaDevAttrComputeCapabilityMajor, dev_id));
+    CUDA_CALL(cudaDeviceGetAttribute(
+        &minor, cudaDevAttrComputeCapabilityMinor, dev_id));
+    return major * 10 + minor;
+  }
+
   static size_t GetCurDevice() {
     int dev_id;
     cudaGetDevice(&dev_id);
@@ -39,13 +50,26 @@ class TargetWrapper<TARGET(kCUDA)> {
   static void CreateStream(stream_t* stream) {}
   static void DestroyStream(const stream_t& stream) {}
 
-  static void CreateEvent(event_t* event) {}
-  static void DestroyEvent(const event_t& event) {}
+  static void CreateEvent(event_t* event) { cudaEventCreate(event); }
+  static void CreateEventWithFlags(
+      event_t* event, unsigned int flags = cudaEventDisableTiming) {
+    cudaEventCreateWithFlags(event, flags);
+  }
+  static void DestroyEvent(const event_t& event) { cudaEventDestroy(event); }
 
   static void RecordEvent(const event_t& event) {}
+  static void RecordEvent(const event_t& event, const stream_t& stream) {
+    cudaEventRecord(event, stream);
+  }
   static void SyncEvent(const event_t& event) {}
 
-  static void StreamSync(const stream_t& stream) {}
+  static void StreamSync(const stream_t& stream) {
+    cudaStreamSynchronize(stream);
+  }
+  static void StreamSync(const stream_t& stream, const event_t& event) {
+    cudaStreamWaitEvent(stream, event, 0);
+  }
+  static void DeviceSync() { cudaDeviceSynchronize(); }
 
   static void* Malloc(size_t size);
   static void Free(void* ptr);

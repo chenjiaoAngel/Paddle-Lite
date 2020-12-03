@@ -21,15 +21,19 @@ namespace lite {
 namespace kernels {
 namespace arm {
 
-void SplitCompute::Run() {
-  auto& param = Param<operators::SplitParam>();
-  const float* din = param.x->data<float>();
+template <typename T, PrecisionType PType>
+void SplitCompute<T, PType>::Run() {
+  auto& param = this->template Param<operators::SplitParam>();
+  const T* din = param.x->template data<T>();
   auto& dout = param.output;
   auto in_dim = param.x->dims();
   std::vector<int> in_strides(in_dim.size());
   in_strides[in_dim.size() - 1] = in_dim[in_dim.size() - 1];
   for (int i = in_dim.size() - 2; i >= 0; --i) {
     in_strides[i] = in_strides[i + 1] * in_dim[i];
+  }
+  for (auto out : dout) {
+    out->set_lod(param.x->lod());
   }
   lite::arm::math::split(din, dout, param.axis, in_strides);
 }
@@ -39,8 +43,24 @@ void SplitCompute::Run() {
 }  // namespace lite
 }  // namespace paddle
 
-REGISTER_LITE_KERNEL(
-    split, kARM, kFloat, kNCHW, paddle::lite::kernels::arm::SplitCompute, def)
-    .BindInput("X", {LiteType::GetTensorTy(TARGET(kARM))})
-    .BindOutput("Out", {LiteType::GetTensorTy(TARGET(kARM))})
+using split_float =
+    paddle::lite::kernels::arm::SplitCompute<float, PRECISION(kFloat)>;
+REGISTER_LITE_KERNEL(split, kARM, kFloat, kNCHW, split_float, def)
+    .BindInput("X", {LiteType::GetTensorTy(TARGET(kARM), PRECISION(kFloat))})
+    .BindInput("AxisTensor",
+               {LiteType::GetTensorTy(TARGET(kARM), PRECISION(kInt32))})
+    .BindInput("SectionsTensorList",
+               {LiteType::GetTensorTy(TARGET(kARM), PRECISION(kInt32))})
+    .BindOutput("Out", {LiteType::GetTensorTy(TARGET(kARM), PRECISION(kFloat))})
+    .Finalize();
+
+using split_int64 =
+    paddle::lite::kernels::arm::SplitCompute<int64_t, PRECISION(kInt64)>;
+REGISTER_LITE_KERNEL(split, kARM, kInt64, kNCHW, split_int64, def)
+    .BindInput("X", {LiteType::GetTensorTy(TARGET(kARM), PRECISION(kInt64))})
+    .BindInput("AxisTensor",
+               {LiteType::GetTensorTy(TARGET(kARM), PRECISION(kInt32))})
+    .BindInput("SectionsTensorList",
+               {LiteType::GetTensorTy(TARGET(kARM), PRECISION(kInt32))})
+    .BindOutput("Out", {LiteType::GetTensorTy(TARGET(kARM), PRECISION(kInt64))})
     .Finalize();

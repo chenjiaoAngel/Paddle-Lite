@@ -26,31 +26,36 @@ template <typename T>
 struct CBlas;
 
 #ifdef PADDLE_WITH_MKLML
+
+#ifndef LITE_WITH_STATIC_MKL
+using namespace lite::x86;  // NOLINT
+#endif
+
 template <>
 struct CBlas<float> {
   template <typename... ARGS>
   static void GEMM(ARGS... args) {
-    lite::x86::cblas_sgemm(args...);
+    cblas_sgemm(args...);
   }
 
   template <typename... ARGS>
   static float *GEMM_ALLOC(ARGS... args) {
-    return lite::x86::cblas_sgemm_alloc(args...);
+    return cblas_sgemm_alloc(args...);
   }
 
   template <typename... ARGS>
   static void GEMM_PACK(ARGS... args) {
-    lite::x86::cblas_sgemm_pack(args...);
+    cblas_sgemm_pack(args...);
   }
 
   template <typename... ARGS>
   static void GEMM_COMPUTE(ARGS... args) {
-    lite::x86::cblas_sgemm_compute(args...);
+    cblas_sgemm_compute(args...);
   }
 
   template <typename... ARGS>
   static void GEMM_FREE(ARGS... args) {
-    lite::x86::cblas_sgemm_free(args...);
+    cblas_sgemm_free(args...);
   }
 
 #ifdef PADDLE_WITH_LIBXSMM
@@ -62,72 +67,72 @@ struct CBlas<float> {
 
   template <typename... ARGS>
   static void AXPY(ARGS... args) {
-    lite::x86::cblas_saxpy(args...);
+    cblas_saxpy(args...);
   }
 
   template <typename... ARGS>
   static void VCOPY(ARGS... args) {
-    lite::x86::cblas_scopy(args...);
+    cblas_scopy(args...);
   }
 
   template <typename... ARGS>
   static void GEMV(ARGS... args) {
-    lite::x86::cblas_sgemv(args...);
+    cblas_sgemv(args...);
   }
 
   template <typename... ARGS>
   static float DOT(ARGS... args) {
-    return lite::x86::cblas_sdot(args...);
+    return cblas_sdot(args...);
   }
 
   template <typename... ARGS>
   static void SCAL(ARGS... args) {
-    lite::x86::cblas_sscal(args...);
+    cblas_sscal(args...);
   }
 
   template <typename... ARGS>
   static float ASUM(ARGS... args) {
-    return lite::x86::cblas_sasum(args...);
+    return cblas_sasum(args...);
   }
 
   template <typename... ARGS>
   static void GEMM_BATCH(ARGS... args) {
-    lite::x86::cblas_sgemm_batch(args...);
+    cblas_sgemm_batch(args...);
   }
 
   template <typename... ARGS>
   static void VADD(ARGS... args) {
-    lite::x86::vsAdd(args...);
+    vsAdd(args...);
   }
 
   template <typename... ARGS>
   static void VMUL(ARGS... args) {
-    lite::x86::vsMul(args...);
+    vsMul(args...);
   }
 
   template <typename... ARGS>
   static void VEXP(ARGS... args) {
-    lite::x86::vsExp(args...);
+    vsExp(args...);
   }
 
   template <typename... ARGS>
   static void VSQUARE(ARGS... args) {
-    lite::x86::vsSqr(args...);
+    vsSqr(args...);
   }
 
   template <typename... ARGS>
   static void VPOW(ARGS... args) {
-    lite::x86::vsPowx(args...);
+    vsPowx(args...);
   }
 
   template <typename... ARGS>
   static void VINV(ARGS... args) {
-    lite::x86::vsInv(args...);
+    vsInv(args...);
   }
 
   template <typename... ARGS>
   static void VMERF(ARGS... args) {
-    lite::x86::vmsErf(args...);
+    vmsErf(args...);
   }
 };
 
@@ -135,27 +140,27 @@ template <>
 struct CBlas<double> {
   template <typename... ARGS>
   static void GEMM(ARGS... args) {
-    lite::x86::cblas_dgemm(args...);
+    cblas_dgemm(args...);
   }
 
   template <typename... ARGS>
   static double *GEMM_ALLOC(ARGS... args) {
-    return lite::x86::cblas_dgemm_alloc(args...);
+    return cblas_dgemm_alloc(args...);
   }
 
   template <typename... ARGS>
   static void GEMM_PACK(ARGS... args) {
-    lite::x86::cblas_dgemm_pack(args...);
+    cblas_dgemm_pack(args...);
   }
 
   template <typename... ARGS>
   static void GEMM_COMPUTE(ARGS... args) {
-    lite::x86::cblas_dgemm_compute(args...);
+    cblas_dgemm_compute(args...);
   }
 
   template <typename... ARGS>
   static void GEMM_FREE(ARGS... args) {
-    lite::x86::cblas_dgemm_free(args...);
+    cblas_dgemm_free(args...);
   }
 
 #ifdef PADDLE_WITH_LIBXSMM
@@ -167,72 +172,72 @@ struct CBlas<double> {
 
   template <typename... ARGS>
   static void AXPY(ARGS... args) {
-    lite::x86::cblas_daxpy(args...);
+    cblas_daxpy(args...);
   }
 
   template <typename... ARGS>
   static void VCOPY(ARGS... args) {
-    lite::x86::cblas_dcopy(args...);
+    cblas_dcopy(args...);
   }
 
   template <typename... ARGS>
   static void GEMV(ARGS... args) {
-    lite::x86::cblas_dgemv(args...);
+    cblas_dgemv(args...);
   }
 
   template <typename... ARGS>
   static double DOT(ARGS... args) {
-    return lite::x86::cblas_ddot(args...);
+    return cblas_ddot(args...);
   }
 
   template <typename... ARGS>
   static void SCAL(ARGS... args) {
-    lite::x86::cblas_dscal(args...);
+    cblas_dscal(args...);
   }
 
   template <typename... ARGS>
   static double ASUM(ARGS... args) {
-    return lite::x86::cblas_dasum(args...);
+    return cblas_dasum(args...);
   }
 
   template <typename... ARGS>
   static void GEMM_BATCH(ARGS... args) {
-    lite::x86::cblas_dgemm_batch(args...);
+    cblas_dgemm_batch(args...);
   }
 
   template <typename... ARGS>
   static void VADD(ARGS... args) {
-    lite::x86::vdAdd(args...);
+    vdAdd(args...);
   }
 
   template <typename... ARGS>
   static void VMUL(ARGS... args) {
-    lite::x86::vdMul(args...);
+    vdMul(args...);
   }
 
   template <typename... ARGS>
   static void VEXP(ARGS... args) {
-    lite::x86::vdExp(args...);
+    vdExp(args...);
   }
 
   template <typename... ARGS>
   static void VSQUARE(ARGS... args) {
-    lite::x86::vdSqr(args...);
+    vdSqr(args...);
   }
 
   template <typename... ARGS>
   static void VPOW(ARGS... args) {
-    lite::x86::vdPowx(args...);
+    vdPowx(args...);
   }
 
   template <typename... ARGS>
   static void VINV(ARGS... args) {
-    lite::x86::vdInv(args...);
+    vdInv(args...);
   }
 
   template <typename... ARGS>
   static void VMERF(ARGS... args) {
-    lite::x86::vmdErf(args...);
+    vmdErf(args...);
   }
 };
 
@@ -287,22 +292,22 @@ struct CBlas<double> {
 
 template <>
 struct CBlas<lite::fluid::float16> {
-  static void GEMM(...) { PADDLE_THROW("float16 GEMM not supported on CPU"); }
+  static void GEMM(...) { LOG(FATAL) << "float16 GEMM not supported on CPU"; }
   static void SMM_GEMM(...) {
-    PADDLE_THROW("float16 SMM_GEMM not supported on CPU");
+    LOG(FATAL) << "float16 SMM_GEMM not supported on CPU";
   }
-  static void VMUL(...) { PADDLE_THROW("float16 VMUL not supported on CPU"); }
-  static void VEXP(...) { PADDLE_THROW("float16 VEXP not supported on CPU"); }
+  static void VMUL(...) { LOG(FATAL) << "float16 VMUL not supported on CPU"; }
+  static void VEXP(...) { LOG(FATAL) << "float16 VEXP not supported on CPU"; }
   static void VSQUARE(...) {
-    PADDLE_THROW("float16 VSQUARE not supported on CPU");
+    LOG(FATAL) << "float16 VSQUARE not supported on CPU";
   }
-  static void VPOW(...) { PADDLE_THROW("float16 VPOW not supported on CPU"); }
-  static void DOT(...) { PADDLE_THROW("float16 DOT not supported on CPU"); };
-  static void SCAL(...) { PADDLE_THROW("float16 SCAL not supported on CPU"); };
-  static void ASUM(...) { PADDLE_THROW("float16 ASUM not supported on CPU"); };
+  static void VPOW(...) { LOG(FATAL) << "float16 VPOW not supported on CPU"; }
+  static void DOT(...) { LOG(FATAL) << "float16 DOT not supported on CPU"; };
+  static void SCAL(...) { LOG(FATAL) << "float16 SCAL not supported on CPU"; };
+  static void ASUM(...) { LOG(FATAL) << "float16 ASUM not supported on CPU"; };
 #ifdef PADDLE_WITH_MKLML
   static void GEMM_BATCH(...) {
-    PADDLE_THROW("float16 GEMM_BATCH not supported on CPU");
+    LOG(FATAL) << "float16 GEMM_BATCH not supported on CPU";
   }
 #endif
 };
@@ -461,11 +466,11 @@ void Blas<Target>::MatMul(const lite::Tensor &mat_a,
   auto dim_a = mat_a.dims();
   auto dim_b = mat_b.dims();
   auto dim_out = mat_out->dims();
-  PADDLE_ENFORCE(dim_a.size() == 2 && dim_b.size() == 2 && dim_out.size() == 2,
-                 "The input and output of matmul be matrix");
-  // PADDLE_ENFORCE(
-  //    mat_a.target() == mat_b.target() && mat_a.target() == mat_out->target(),
-  //    "The targets of matrices must be same");
+  CHECK(dim_a.size() == 2 && dim_b.size() == 2 && dim_out.size() == 2)
+      << "The input and output of matmul be matrix";
+  // CHECK(
+  //    mat_a.target() == mat_b.target() && mat_a.target() == mat_out->target())
+  //    << "The targets of matrices must be same";
 
   int M = dim_out[0];
   int N = dim_out[1];
@@ -483,7 +488,7 @@ void Blas<Target>::MatMul(const lite::Tensor &mat_a,
              mat_a.data<T>(),
              mat_b.data<T>(),
              beta,
-             mat_out->mutable_data<T>());
+             mat_out->template mutable_data<T>());
 }
 
 template <>
@@ -746,7 +751,7 @@ void Blas<Target>::MatMul(const lite::Tensor &mat_a,
                           T alpha,
                           lite::Tensor *mat_out,
                           T beta) const {
-  PADDLE_ENFORCE_EQ(dim_a.width_, dim_b.height_);
+  CHECK_EQ(dim_a.width_, dim_b.height_);
   CBLAS_TRANSPOSE transA = !dim_a.trans_ ? CblasNoTrans : CblasTrans;
   CBLAS_TRANSPOSE transB = !dim_b.trans_ ? CblasNoTrans : CblasTrans;
   if (dim_a.batch_size_ == 0 && dim_b.batch_size_ == 0) {
@@ -759,10 +764,10 @@ void Blas<Target>::MatMul(const lite::Tensor &mat_a,
                            mat_a.data<T>(),
                            mat_b.data<T>(),
                            beta,
-                           mat_out->mutable_data<T>());
+                           mat_out->template mutable_data<T>());
   } else {
-    PADDLE_ENFORCE(dim_a.batch_size_ == dim_b.batch_size_ ||
-                   dim_a.batch_size_ == 0 || dim_b.batch_size_ == 0);
+    CHECK(dim_a.batch_size_ == dim_b.batch_size_ || dim_a.batch_size_ == 0 ||
+          dim_b.batch_size_ == 0);
     this->template BatchedGEMM<T>(
         transA,
         transB,
@@ -773,7 +778,7 @@ void Blas<Target>::MatMul(const lite::Tensor &mat_a,
         mat_a.data<T>(),
         mat_b.data<T>(),
         beta,
-        mat_out->mutable_data<T>(),
+        mat_out->template mutable_data<T>(),
         dim_a.batch_size_ == 0 ? dim_b.batch_size_ : dim_a.batch_size_,
         dim_a.stride_,
         dim_b.stride_);

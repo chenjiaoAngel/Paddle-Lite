@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -24,18 +25,6 @@ namespace paddle {
 namespace lite {
 namespace mir {
 
-static void UpdateInputTo(cpp::OpDesc* desc,
-                          const std::string& from,
-                          const std::string& to) {
-  for (auto& item : *desc->mutable_inputs()) {
-    for (auto& input : item.second) {
-      if (input == from) {
-        input = to;
-      }
-    }
-  }
-}
-
 /*
  * IoComplementPass complement the necessary instruction to make data
  * transferring or transformation between different places.
@@ -44,13 +33,17 @@ class TypeTargetTransformPass : public ProgramPass {
  public:
   void Apply(const std::unique_ptr<SSAGraph>& graph) override;
 
-  void ComplementInputs(SSAGraph* graph, Node* inst_node, Node* in);
+  void ComplementInputs(SSAGraph* graph,
+                        Node* inst_node,
+                        Node* in,
+                        std::map<std::string, Node*>* copied_nodes);
 
   void AddIoCopyInst(const Type& from,
                      const Type& to,
                      Node* in,
                      SSAGraph* graph,
                      Node* inst_node,
+                     std::map<std::string, Node*>* copied_nodes,
                      const std::vector<Place>& valid_places);
 
   void SetValidPlaces(const std::vector<Place>& valid_places);
@@ -58,6 +51,11 @@ class TypeTargetTransformPass : public ProgramPass {
   const std::vector<Place>& valid_places() const { return valid_places_; }
 
  private:
+  void UpdateInstNode(Node* in,
+                      SSAGraph* graph,
+                      Node* inst_node,
+                      std::string io_copy_output_name);
+
   std::vector<Place> valid_places_;
 };
 

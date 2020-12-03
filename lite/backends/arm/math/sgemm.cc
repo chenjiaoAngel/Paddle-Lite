@@ -34,13 +34,52 @@ void sgemm(bool is_transA,
            int ldc,
            const float* bias,
            bool is_bias,
-           bool is_relu,
+           const operators::ActivationParam act_param,
            ARMContext* ctx) {
+  // alpha default is 1;
+  bool has_alpha = fabsf(alpha - 1.f) > 1e-8f ? 1 : 0;
+  if (N == 1 && !has_alpha) {
+    sgemv(A,
+          B,
+          C,
+          is_transA,
+          M,
+          K,
+          beta,
+          is_bias,
+          bias,
+          act_param.has_active,
+          act_param.active_type,
+          ctx);
+    return;
+  }
+  if (M == 1 && !has_alpha) {
+    float bias_ptr[N];  // NOLINT
+    if (is_bias) {
+      for (int i = 0; i < N; i++) {
+        bias_ptr[i] = bias[0];
+      }
+    }
+    sgemv(B,
+          A,
+          C,
+          !is_transB,
+          N,
+          K,
+          beta,
+          is_bias,
+          bias_ptr,
+          act_param.has_active,
+          act_param.active_type,
+          ctx);
+    return;
+  }
   int hblock = get_hblock(ctx);
   int m_roundup = hblock * ((M + hblock - 1) / hblock);
+  ctx->ExtendWorkspace(m_roundup * K * sizeof(float));
 
-  auto packed_A = static_cast<float*>(
-      TargetMalloc(TargetType::kARM, m_roundup * K * sizeof(float)));
+  auto packed_A = static_cast<float*>(ctx->workspace_data<float>()) +
+                  ctx->llc_size() / sizeof(float);
 
   prepackA(packed_A, A, alpha, lda, 0, M, 0, K, is_transA, ctx);
 
@@ -56,9 +95,8 @@ void sgemm(bool is_transA,
                 ldc,
                 bias,
                 is_bias,
-                is_relu,
+                act_param,
                 ctx);
-  TargetFree(TargetType::kARM, packed_A);
 }
 
 }  // namespace math

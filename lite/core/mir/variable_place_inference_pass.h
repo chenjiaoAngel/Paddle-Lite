@@ -48,119 +48,151 @@ class VariablePlaceInferencePass : public DebugPass {
   void CheckAllArgumentTypeDetermined(SSAGraph* graph) {
     for (auto& node : graph->mutable_nodes()) {
       if (node.IsArg()) {
+        if (node.inlinks.size() == 0 && node.outlinks.size() == 0) {
+          // empty node
+          continue;
+        }
         CHECK(node.AsArg().type) << "node " << node.AsArg().name
                                  << " type not determined, " << &node;
       }
     }
   }
 
-  // Set the tye of the weight
-  void SetWeightType(Node* w, const LiteType& type) {
-// TODO(xg) to optimize this
-#ifdef LITE_WITH_FPGA
-    w->AsArg().type = LiteType::GetTensorTy(
-        TARGET(kHost), PRECISION(kFloat), DATALAYOUT(kNCHW));
-#endif
+  // Set the type of the weight
+  void SetWeightType(Node* weight_node,
+                     const LiteType& type,
+                     const std::map<std::string, bool>& with_targets) {
+    VLOG(4) << "type.precision():" << PrecisionRepr(type.precision());
+    if (with_targets.at("kFPGA")) {
+      weight_node->AsArg().type = LiteType::GetTensorTy(
+          TARGET(kHost), PRECISION(kFloat), DATALAYOUT(kNCHW));
+    } else if (with_targets.at("kOpenCL")) {
+      weight_node->AsArg().type = LiteType::GetTensorTy(
+          TARGET(kHost), PRECISION(kFloat), DATALAYOUT(kNCHW));
+    } else if (with_targets.at("kCUDA")) {
+      weight_node->AsArg().type = LiteType::GetTensorTy(
+          TARGET(kHost), PRECISION(kFloat), DATALAYOUT(kNCHW));
+    } else {
+      weight_node->AsArg().type = LiteType::GetTensorTy(
+          TARGET(kHost), type.precision(), DATALAYOUT(kNCHW));
+    }
+  }
 
-#ifdef LITE_WITH_OPENCL
-    w->AsArg().type = LiteType::GetTensorTy(
-        TARGET(kHost), PRECISION(kFloat), DATALAYOUT(kNCHW));
-#endif
-
-#ifndef LITE_WITH_FPGA
-#ifndef LITE_WITH_OPENCL
-    w->AsArg().type = LiteType::GetTensorTy(
-        TARGET(kHost), type.precision(), DATALAYOUT(kNCHW));
-#endif
-#endif
+  // Update a's kUnk fields from b's fields.
+  void UpdateTypeFrom(const Type** a, const Type* b) {
+    auto target = (*a)->target();
+    auto precision = (*a)->precision();
+    auto layout = (*a)->layout();
+    if (target == TARGET(kUnk)) {
+      target = b->target();
+    }
+    if (precision == PRECISION(kUnk)) {
+      precision = b->precision();
+    }
+    if (layout == DATALAYOUT(kUnk)) {
+      layout = b->layout();
+    }
+    if ((*a)->IsTensor() && b->IsTensor()) {
+      *a = LiteType::GetTensorTy(target, precision, layout);
+    } else if ((*a)->IsTensorList() && b->IsTensorList()) {
+      *a = LiteType::GetTensorListTy(target, precision, layout);
+    }
   }
 
   void InferenceArgumentPlace(SSAGraph* graph) {
+    auto& valid_places = graph->valid_places();
+    auto valid_places_has_target = [&](TargetType t) -> bool {
+      for (auto& p : valid_places) {
+        if (p.target == t) {
+          return true;
+        }
+      }
+      return false;
+    };
+    std::map<std::string, bool> with_targets{
+        {"kOpenCL", valid_places_has_target(TARGET(kOpenCL))},
+        {"kCUDA", valid_places_has_target(TARGET(kCUDA))},
+        {"kFPGA", valid_places_has_target(TARGET(kFPGA))}};
+    VLOG(4) << "with_targets['kOpenCL']:" << with_targets["kOpenCL"];
+    VLOG(4) << "with_targets['kFPGA']:" << with_targets["kFPGA"];
+
     VLOG(3) << "param-type-registry:\n" << ParamTypeRegistry::Global();
-    for (auto& x : graph->StmtTopologicalOrder()) {
-      auto& inst = x->AsStmt();
-// The IoCopyOp is a tool operator, it won't support the type inference.
-// in fpga, we has io_copy+cali+layout tool ops, so we need type inference for
-// tool operator
-#ifndef LITE_WITH_FPGA
-#ifndef LITE_WITH_OPENCL
-      VLOG(3) << "inst.op_type() == 'io_copy', continue";
-      if (inst.op_type() == "io_copy") continue;
-#endif
-#endif
-      // deal with inputs
-      VLOG(4) << "Infering op " << inst.op_info()->Repr();
-      // TODO(zhaolong): Add check if the node's name in op's arguments.
+    for (auto& node : graph->StmtTopologicalOrder()) {
+      auto& inst = node->AsStmt();
+      const auto* op_info = inst.op_info();
+      const auto& op_type = op_info->Type();
+      auto& kernel = inst.picked_kernel();
 
-      auto get_argname = [&](
-          const std::string& node_name,
-          const std::map<std::string, std::vector<std::string>>& argname_map)
-          -> std::string {
-            for (auto& ele : argname_map) {
-              auto it =
-                  std::find(ele.second.begin(), ele.second.end(), node_name);
-              if (it != ele.second.end()) return ele.first;
-            }
-            return "";
-          };
+      // The IoCopyOp is a tool operator, it won't support the type inference.
+      // in fpga, we has io_copy+cali+layout tool ops, so we need type inference
+      // for tool operator
+      if ((!with_targets["kFPGA"]) && (!with_targets["kOpenCL"])) {
+        VLOG(3) << "skip 'io_copy' if target is FPGA and OpenCL";
+        if (op_type == "io_copy") continue;
+      }
 
-      for (auto* x_in : x->inlinks) {
-        std::string node_name = x_in->AsArg().name;
-        std::string arg_name = get_argname(node_name, inst.op_info()->inputs());
-        CHECK(arg_name.size() > 0) << "can not found op arguments for node "
-                                   << node_name;
-        VLOG(4) << "-- input arg_name:" << arg_name << " "
-                << "-- node name:" << node_name;
-        auto type = inst.picked_kernel().GetInputDeclType(arg_name);
-        if (!x_in->AsArg().type) {
-          VLOG(4) << "set type " << *type << " " << x_in->AsArg().name;
-          if (x_in->AsArg().is_weight) {
-            SetWeightType(x_in, *type);
+      // Infering the input and output variable's place according to the
+      // declaration of I/O arguments of the picked kernel of the op
+      VLOG(4) << "Op " << op_info->Repr();
+      for (auto* in_node : node->inlinks) {
+        auto& var = in_node->AsArg();
+        const auto& var_name = var.name;
+        auto* var_type = &var.type;
+        std::string arg_name;
+        CHECK(op_info->GetInputArgname(var_name, &arg_name))
+            << "Can not find the input argument for var " << var_name;
+        VLOG(4) << " - input arg name:" << arg_name << " var name:" << var_name;
+        const auto* decl_type = kernel.GetInputDeclType(arg_name);
+        if (!(*var_type)) {
+          VLOG(4) << "set type " << *decl_type << " " << var_name;
+          if (var.is_weight) {
+            SetWeightType(in_node, *decl_type, with_targets);
           } else {
-            x_in->AsArg().type = type;
+            *var_type = decl_type;
+          }
+        } else if (!(*var_type)->place().is_valid()) {
+          // If is quantization, infer the Int8 type.
+          if (decl_type->precision() == PRECISION(kInt8)) {
+            *var_type = decl_type;
+          } else {
+            UpdateTypeFrom(var_type, decl_type);
           }
         }
       }
-
-      VLOG(4) << "inst " << inst.op_info()->Repr();
-      for (auto* x_out : x->outlinks) {
-        std::string node_name = x_out->AsArg().name;
-        std::string arg_name =
-            get_argname(node_name, inst.op_info()->outputs());
-        CHECK(arg_name.size() > 0) << "can not found op arguments for node "
-                                   << node_name << " in Inst "
-                                   << inst.op_type();
-        VLOG(4) << "-- output arg_name " << arg_name;
-        auto type = inst.picked_kernel().GetOutputDeclType(arg_name);
-        if (!x_out->AsArg().type) {
-          VLOG(4) << "set type " << *type << " " << x_out->AsArg().name;
-          if (x_out->AsArg().is_weight) {
-            SetWeightType(x_out, *type);
+      for (auto* out_node : node->outlinks) {
+        auto& var = out_node->AsArg();
+        const auto& var_name = var.name;
+        auto* var_type = &var.type;
+        std::string arg_name;
+        CHECK(op_info->GetOutputArgname(var_name, &arg_name))
+            << "Can not find the output argument for var " << var_name;
+        VLOG(4) << " - output arg name:" << arg_name
+                << " var name:" << var_name;
+        const auto* decl_type = kernel.GetOutputDeclType(arg_name);
+        if (!(*var_type)) {
+          VLOG(4) << "set type " << *decl_type << " " << var_name;
+          if (var.is_weight) {
+            SetWeightType(out_node, *decl_type, with_targets);
           } else {
-            x_out->AsArg().type = type;
+            *var_type = decl_type;
+          }
+        } else if (!(*var_type)->place().is_valid()) {
+          // If is quantization, infer the Int8 type.
+          if (decl_type->precision() == PRECISION(kInt8) ||
+              (decl_type->precision() == PRECISION(kFP16) &&
+               decl_type->target() != TARGET(kOpenCL))) {
+            *var_type = decl_type;
+          } else {
+            UpdateTypeFrom(var_type, decl_type);
           }
         }
       }
-    }
-  }
-
-  // Update me's kUnk fields by other's fields.
-  void UpdatePlace(Place* me, const Place& other) {
-    CHECK(other.is_valid());
-    if (me->target == TARGET(kUnk)) {
-      me->target = other.target;
-    }
-    if (me->precision == PRECISION(kUnk)) {
-      me->precision = other.precision;
-    }
-    if (me->layout == DATALAYOUT(kUnk)) {
-      me->layout = other.layout;
     }
   }
 
  private:
-  // The default target for arguments, e.g. load weights to CPU memory for CUDA
-  // computation by default.
+  // The default target for arguments, e.g. load weights to CPU memory for
+  // CUDA computation by default.
   TargetType argument_default_target_{TARGET(kHost)};
 };
 

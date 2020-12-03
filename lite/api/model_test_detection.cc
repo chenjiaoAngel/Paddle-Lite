@@ -17,9 +17,12 @@
 #include <string>
 #include <vector>
 #include "lite/api/paddle_api.h"
+<<<<<<< HEAD
 #include "lite/api/paddle_use_kernels.h"
 #include "lite/api/paddle_use_ops.h"
 #include "lite/api/paddle_use_passes.h"
+=======
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 #include "lite/api/test_helper.h"
 #include "lite/core/device_info.h"
 #include "lite/core/profile/timer.h"
@@ -39,16 +42,32 @@ DEFINE_bool(use_optimize_nb,
             "optimized & naive buffer model for mobile devices");
 DEFINE_string(arg_name, "", "the arg name");
 
+<<<<<<< HEAD
 DEFINE_float(threshold, 0.5f, "threshold value default 0.5f");
 DEFINE_string(in_txt, "", "input text");
 DEFINE_string(out_txt, "", "output text");
+=======
+DEFINE_string(threshold, "0.5", "threshold value default 0.5f");
+DEFINE_string(in_txt, "", "input text");
+DEFINE_string(out_txt, "", "output text");
+DEFINE_int32(orih, 1920, "input image height");
+DEFINE_int32(oriw, 1080, "input image width");
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
 namespace paddle {
 namespace lite_api {
 
 struct Object {
+<<<<<<< HEAD
   sdt::vector<int> rec;
   int class_id;
+=======
+  float x;
+  float y;
+  float width;
+  float height;
+  float class_id;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   float prob;
 };
 
@@ -75,6 +94,7 @@ void OutputOptModel(const std::string& load_model_dir,
   LOG(INFO) << "Save optimized model to " << save_optimized_model_dir;
 }
 
+<<<<<<< HEAD
 void detect_object(Tensor* tout, const float thresh, int orih, int oriw) {
   std::vector<Object> objects;
   const float* dout = tout->data();
@@ -88,10 +108,46 @@ void detect_object(Tensor* tout, const float thresh, int orih, int oriw) {
     object.rec.y = static_cast<int>((values[3] * orih));
     object.rec.width = static_cast<int>((values[4] * oriw - object.rec.x));
     object.rec.height = static_cast<int>((values[5] * orih - object.rec.y));
+=======
+void detect_choose(const float* dout,
+                   std::vector<int64_t> dims,
+                   const float thresh) {
+  std::string name = FLAGS_out_txt + "_accu.txt";
+  FILE* fp = fopen(name.c_str(), "w");
+  for (int iw = 0; iw < dims[0]; iw++) {
+    const float* values = dout + iw * dims[1];
+    if (values[1] > thresh) {  // pro > 0.01
+      fprintf(fp, "%f \n", values[0]);
+      fprintf(fp, "%f \n", values[1]);
+      fprintf(fp, "%f \n", values[2]);
+      fprintf(fp, "%f \n", values[3]);
+      fprintf(fp, "%f \n", values[4]);
+      fprintf(fp, "%f \n", values[5]);
+    }
+  }
+  fclose(fp);
+}
+void detect_object(const float* dout,
+                   std::vector<int64_t> dims,
+                   const float thresh,
+                   int orih,
+                   int oriw) {
+  std::vector<Object> objects;
+  for (int iw = 0; iw < dims[0]; iw++) {
+    Object object;
+    const float* values = dout + iw * dims[1];
+    object.class_id = values[0];
+    object.prob = values[1];
+    object.x = values[2] * oriw;
+    object.y = values[3] * orih;
+    object.width = values[4] * oriw - object.x;
+    object.height = values[5] * orih - object.y;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
     objects.push_back(object);
   }
   std::string name = FLAGS_out_txt + "_accu.txt";
   FILE* fp = fopen(name.c_str(), "w");
+<<<<<<< HEAD
   for (int i = 0; i < objects.size(); ++i) {
     Object object = objects.at(i);
     if (object.prob > thresh) {
@@ -111,6 +167,25 @@ void detect_object(Tensor* tout, const float thresh, int orih, int oriw) {
                 << ", location: x=" << object.rec.x << ", y=" << object.rec.y
                 << ", width=" << object.rec.width
                 << ", height=" << object.rec.height;
+=======
+  for (size_t i = 0; i < objects.size(); ++i) {
+    Object object = objects.at(i);
+    if (object.prob > thresh && object.x > 0 && object.y > 0 &&
+        object.width > 0 && object.height > 0) {
+      if (object.x >= oriw || object.width >= oriw || object.y >= orih ||
+          object.height >= orih)
+        continue;
+      fprintf(fp, "%f \n", object.x);
+      fprintf(fp, "%f \n", object.y);
+      fprintf(fp, "%f \n", object.width);
+      fprintf(fp, "%f \n", object.height);
+      fprintf(fp, "%f \n", object.prob);
+      fprintf(fp, "%f \n", object.class_id);
+      LOG(INFO) << "object id: " << object.class_id << ", image size: " << oriw
+                << ", " << orih << ", detect object: " << object.prob
+                << ", location: x=" << object.x << ", y=" << object.y
+                << ", width=" << object.width << ", height=" << object.height;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
     }
   }
   fclose(fp);
@@ -185,16 +260,29 @@ void Run(const std::vector<std::vector<int64_t>>& input_shapes,
 
   auto output = predictor->GetOutput(0);
   auto out = output->data<float>();
+<<<<<<< HEAD
   LOG(INFO) << "out " << out[0];
   LOG(INFO) << "out " << out[1];
   auto output_shape = output->shape();
+=======
+  auto output_shape = output->shape();
+  // detect
+  detect_object(
+      out, output_shape, atof(FLAGS_threshold.data()), FLAGS_orih, FLAGS_oriw);
+  // detect_choose(out, output_shape, atof(FLAGS_threshold.data()));
+  LOG(INFO) << "out " << out[0];
+  LOG(INFO) << "out " << out[1];
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   int output_num = 1;
   for (int i = 0; i < output_shape.size(); ++i) {
     output_num *= output_shape[i];
   }
   LOG(INFO) << "output_num: " << output_num;
+<<<<<<< HEAD
   // detect
   detect_object(output, Flag_threshold);
+=======
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   FILE* fp = nullptr;
   if (flag_out) {
     fp = fopen(FLAGS_out_txt.c_str(), "w");
@@ -209,6 +297,10 @@ void Run(const std::vector<std::vector<int64_t>>& input_shapes,
   if (flag_out) {
     fclose(fp);
   }
+<<<<<<< HEAD
+=======
+
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   printf("out mean: %f \n", sum1 / output_num);
 
   FILE* fp_w = fopen("time.txt", "a+");
@@ -241,7 +333,11 @@ void Run(const std::vector<std::vector<int64_t>>& input_shapes,
     std::ofstream out(FLAGS_arg_name + ".txt");
     for (size_t i = 0; i < arg_num; ++i) {
       sum += arg_tensor->data<float>()[i];
+<<<<<<< HEAD
       out << std::to_string(arg_tensor->data<float>()[i]) << "\n";
+=======
+      out << paddle::lite::to_string(arg_tensor->data<float>()[i]) << "\n";
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
     }
     LOG(INFO) << FLAGS_arg_name << " shape is " << os.str()
               << ", mean value is " << sum * 1. / arg_num;
@@ -301,7 +397,11 @@ int main(int argc, char** argv) {
   LOG(INFO) << "input shapes: " << FLAGS_input_shape;
   std::vector<std::string> str_input_shapes = split_string(FLAGS_input_shape);
   std::vector<std::vector<int64_t>> input_shapes;
+<<<<<<< HEAD
   for (int i = 0; i < str_input_shapes.size(); ++i) {
+=======
+  for (size_t i = 0; i < str_input_shapes.size(); ++i) {
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
     LOG(INFO) << "input shape: " << str_input_shapes[i];
     input_shapes.push_back(get_shape(str_input_shapes[i]));
   }

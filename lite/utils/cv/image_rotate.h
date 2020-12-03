@@ -13,16 +13,37 @@
 // limitations under the License.
 
 #pragma once
+<<<<<<< HEAD
 #include <stdint.h>
 #include <vector>
+=======
+
+#include <stdint.h>
+#include <vector>
+#include "lite/utils/cv/paddle_image_preprocess.h"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 namespace paddle {
 namespace lite {
 namespace utils {
 namespace cv {
+<<<<<<< HEAD
 void rotate_hwc1(
     const uint8_t* src, uint8_t* dst, int srcw, int srch, float degree);
 void rotate_hwc2(
     const uint8_t* src, uint8_t* dst, int srcw, int srch, float degree);
+=======
+class ImageRotate {
+ public:
+  void choose(const uint8_t* src,
+              uint8_t* dst,
+              ImageFormat srcFormat,
+              int srcw,
+              int srch,
+              float degree);
+};
+void rotate_hwc1(
+    const uint8_t* src, uint8_t* dst, int srcw, int srch, float degree);
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 void rotate_hwc3(
     const uint8_t* src, uint8_t* dst, int srcw, int srch, float degree);
 void rotate_hwc4(

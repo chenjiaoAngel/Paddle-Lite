@@ -19,20 +19,19 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #ifndef LITE_ON_TINY_PUBLISH
 #include "lite/api/cxx_api.h"
-#include "lite/api/paddle_use_passes.h"
+#include "lite/api/opt_base.h"
 #endif
 
 #include "lite/api/light_api.h"
 #include "lite/api/paddle_api.h"
-#include "lite/api/paddle_use_kernels.h"
-#include "lite/api/paddle_use_ops.h"
+#include "lite/api/python/pybind/tensor_py.h"
 #include "lite/core/tensor.h"
 
 namespace py = pybind11;
@@ -41,19 +40,45 @@ namespace paddle {
 namespace lite {
 namespace pybind {
 
-using lite_api::Tensor;
-using lite_api::CxxConfig;
-using lite_api::MobileConfig;
-using lite_api::PowerMode;
-using lite_api::TargetType;
-using lite_api::PrecisionType;
-using lite_api::DataLayoutType;
-using lite_api::Place;
 using lite::LightPredictorImpl;
+using lite_api::CxxConfig;
+using lite_api::DataLayoutType;
+using lite_api::MLUCoreVersion;
+using lite_api::MobileConfig;
+using lite_api::OptBase;
+using lite_api::Place;
+using lite_api::PowerMode;
+using lite_api::PrecisionType;
+using lite_api::TargetType;
+using lite_api::Tensor;
+using lite_api::CxxModelBuffer;
 
 #ifndef LITE_ON_TINY_PUBLISH
 using lite::CxxPaddleApiImpl;
 static void BindLiteCxxPredictor(py::module *m);
+void BindLiteOpt(py::module *m) {
+  py::class_<OptBase> opt_base(*m, "Opt");
+  opt_base.def(py::init<>())
+      .def("set_model_dir", &OptBase::SetModelDir)
+      .def("set_modelset_dir", &OptBase::SetModelSetDir)
+      .def("set_model_file", &OptBase::SetModelFile)
+      .def("set_param_file", &OptBase::SetParamFile)
+      .def("set_valid_places", &OptBase::SetValidPlaces)
+      .def("set_optimize_out", &OptBase::SetOptimizeOut)
+      .def("set_model_type", &OptBase::SetModelType)
+      .def("set_quant_model", &OptBase::SetQuantModel)
+      .def("set_quant_type", &OptBase::SetQuantType)
+      .def("record_model_info", &OptBase::RecordModelInfo)
+      .def("set_passes_internal", &OptBase::SetPassesInternal)
+      .def("run", &OptBase::Run)
+      .def("run_optimize", &OptBase::RunOptimize)
+      .def("help", &OptBase::PrintHelpInfo)
+      .def("executablebin_help", &OptBase::PrintExecutableBinHelpInfo)
+      .def("print_supported_ops", &OptBase::PrintSupportedOps)
+      .def("display_kernels_info", &OptBase::DisplayKernelsInfo)
+      .def("print_all_ops", &OptBase::PrintAllOps)
+      .def("check_if_model_supported", &OptBase::CheckIfModelSupported);
+}
 #endif
 static void BindLiteLightPredictor(py::module *m);
 static void BindLiteCxxConfig(py::module *m);
@@ -61,6 +86,7 @@ static void BindLiteMobileConfig(py::module *m);
 static void BindLitePowerMode(py::module *m);
 static void BindLitePlace(py::module *m);
 static void BindLiteTensor(py::module *m);
+static void BindLiteMLUCoreVersion(py::module *m);
 
 void BindLiteApi(py::module *m) {
   BindLiteCxxConfig(m);
@@ -68,6 +94,7 @@ void BindLiteApi(py::module *m) {
   BindLitePowerMode(m);
   BindLitePlace(m);
   BindLiteTensor(m);
+  BindLiteMLUCoreVersion(m);
 #ifndef LITE_ON_TINY_PUBLISH
   BindLiteCxxPredictor(m);
 #endif
@@ -101,13 +128,27 @@ void BindLiteCxxConfig(py::module *m) {
       .def("set_param_file", &CxxConfig::set_param_file)
       .def("param_file", &CxxConfig::param_file)
       .def("set_valid_places", &CxxConfig::set_valid_places)
-      .def("set_model_buffer", &CxxConfig::set_model_buffer)
-      .def("model_from_memory", &CxxConfig::model_from_memory);
+      .def("set_model_buffer",
+           (void (CxxConfig::*)(const char *, size_t, const char *, size_t)) &
+               CxxConfig::set_model_buffer)
+      .def("set_model_buffer",
+           (void (CxxConfig::*)(std::shared_ptr<CxxModelBuffer>)) &
+               CxxConfig::set_model_buffer)
+      .def("set_passes_internal", &CxxConfig::set_passes_internal)
+      .def("is_model_from_memory", &CxxConfig::is_model_from_memory);
 #ifdef LITE_WITH_ARM
   cxx_config.def("set_threads", &CxxConfig::set_threads)
       .def("threads", &CxxConfig::threads)
       .def("set_power_mode", &CxxConfig::set_power_mode)
       .def("power_mode", &CxxConfig::power_mode);
+#endif
+#ifdef LITE_WITH_MLU
+  cxx_config.def("set_mlu_core_version", &CxxConfig::set_mlu_core_version)
+      .def("set_mlu_core_number", &CxxConfig::set_mlu_core_number)
+      .def("set_mlu_input_layout", &CxxConfig::set_mlu_input_layout)
+      .def("set_mlu_use_first_conv", &CxxConfig::set_mlu_use_first_conv)
+      .def("set_mlu_first_conv_mean", &CxxConfig::set_mlu_first_conv_mean)
+      .def("set_mlu_first_conv_std", &CxxConfig::set_mlu_first_conv_std);
 #endif
 }
 
@@ -116,10 +157,12 @@ void BindLiteMobileConfig(py::module *m) {
   py::class_<MobileConfig> mobile_config(*m, "MobileConfig");
 
   mobile_config.def(py::init<>())
+      .def("set_model_from_file", &MobileConfig::set_model_from_file)
+      .def("set_model_from_buffer", &MobileConfig::set_model_from_buffer)
       .def("set_model_dir", &MobileConfig::set_model_dir)
       .def("model_dir", &MobileConfig::model_dir)
       .def("set_model_buffer", &MobileConfig::set_model_buffer)
-      .def("model_from_memory", &MobileConfig::model_from_memory);
+      .def("is_model_from_memory", &MobileConfig::is_model_from_memory);
 #ifdef LITE_WITH_ARM
   mobile_config.def("set_threads", &MobileConfig::set_threads)
       .def("threads", &MobileConfig::threads)
@@ -138,6 +181,12 @@ void BindLitePowerMode(py::module *m) {
       .value("LITE_POWER_RAND_LOW", PowerMode::LITE_POWER_RAND_LOW);
 }
 
+void BindLiteMLUCoreVersion(py::module *m) {
+  py::enum_<MLUCoreVersion>(*m, "MLUCoreVersion")
+      .value("LITE_MLU_220", MLUCoreVersion::MLU_220)
+      .value("LITE_MLU_270", MLUCoreVersion::MLU_270);
+}
+
 void BindLitePlace(py::module *m) {
   // TargetType
   py::enum_<TargetType>(*m, "TargetType")
@@ -148,12 +197,19 @@ void BindLitePlace(py::module *m) {
       .value("OpenCL", TargetType::kOpenCL)
       .value("FPGA", TargetType::kFPGA)
       .value("NPU", TargetType::kNPU)
+      .value("MLU", TargetType::kMLU)
+      .value("RKNPU", TargetType::kRKNPU)
+      .value("APU", TargetType::kAPU)
+      .value("HUAWEI_ASCEND_NPU", TargetType::kHuaweiAscendNPU)
+      .value("IMAGINATION_NNA", TargetType::kImaginationNNA)
       .value("Any", TargetType::kAny);
 
   // PrecisionType
   py::enum_<PrecisionType>(*m, "PrecisionType")
       .value("FP16", PrecisionType::kFP16)
       .value("FP32", PrecisionType::kFloat)
+      .value("FP64", PrecisionType::kFP64)
+      .value("UINT8", PrecisionType::kUInt8)
       .value("INT8", PrecisionType::kInt8)
       .value("INT16", PrecisionType::kInt16)
       .value("INT32", PrecisionType::kInt32)
@@ -165,6 +221,9 @@ void BindLitePlace(py::module *m) {
   py::enum_<DataLayoutType>(*m, "DataLayoutType")
       .value("NCHW", DataLayoutType::kNCHW)
       .value("NHWC", DataLayoutType::kNHWC)
+      .value("ImageDefault", DataLayoutType::kImageDefault)
+      .value("ImageFolder", DataLayoutType::kImageFolder)
+      .value("ImageNW", DataLayoutType::kImageNW)
       .value("Any", DataLayoutType::kAny);
 
   // Place
@@ -189,11 +248,16 @@ void BindLiteTensor(py::module *m) {
   py::class_<Tensor> tensor(*m, "Tensor");
 
   tensor.def("resize", &Tensor::Resize)
+      .def("numpy", [](Tensor &self) { return TensorToPyArray(self); })
       .def("shape", &Tensor::shape)
       .def("target", &Tensor::target)
       .def("precision", &Tensor::precision)
       .def("lod", &Tensor::lod)
-      .def("set_lod", &Tensor::SetLoD);
+      .def("set_lod", &Tensor::SetLoD)
+      .def("from_numpy",
+           SetTensorFromPyArray,
+           py::arg("array"),
+           py::arg("place") = TargetType::kHost);
 
 #define DO_GETTER_ONCE(data_type__, name__)                           \
   tensor.def(#name__, [=](Tensor &self) -> std::vector<data_type__> { \
@@ -225,6 +289,7 @@ void BindLiteTensor(py::module *m) {
   DO_GETTER_ONCE(data_type__, name__##_data)
 
   DATA_GETTER_SETTER_ONCE(int8_t, int8);
+  DATA_GETTER_SETTER_ONCE(uint8_t, uint8);
   DATA_GETTER_SETTER_ONCE(int32_t, int32);
   DATA_GETTER_SETTER_ONCE(float, float);
 #undef DO_GETTER_ONCE

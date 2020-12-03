@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License. */
 
 #include "lite/backends/x86/math/unpooling.h"
-#include "lite/utils/paddle_enforce.h"
+#include "lite/utils/cp_logging.h"
 
 namespace paddle {
 namespace lite {
@@ -36,12 +36,12 @@ class Unpool2dMaxFunctor<lite::TargetType::kX86, T> {
     int output_feasize = output_height * output_width;
     const T* input_data = input.data<T>();
     const int* indices_data = indices.data<int>();
-    T* output_data = output->mutable_data<T>(lite::TargetType::kX86);
+    T* output_data = output->template mutable_data<T>(lite::TargetType::kX86);
     for (int b = 0; b < batch_size; ++b) {
       for (int c = 0; c < output_channels; ++c) {
         for (int i = 0; i < input_feasize; ++i) {
           int index = indices_data[i];
-          PADDLE_ENFORCE(index < output_feasize, "err index in unpooling!");
+          CHECK(index < output_feasize) << "err index in unpooling!";
           output_data[index] = input_data[i];
         }
         input_data += input_feasize;
@@ -70,13 +70,14 @@ class Unpool2dMaxGradFunctor<lite::TargetType::kX86, T> {
     int output_feasize = output_height * output_width;
     const int* indices_data = indices.data<int>();
     const T* output_grad_data = output_grad.data<T>();
-    T* input_grad_data = input_grad->mutable_data<T>(lite::TargetType::kX86);
+    T* input_grad_data =
+        input_grad->template mutable_data<T>(lite::TargetType::kX86);
 
     for (int b = 0; b < batch_size; ++b) {
       for (int c = 0; c < output_channels; ++c) {
         for (int i = 0; i < input_feasize; ++i) {
           int index = indices_data[i];
-          PADDLE_ENFORCE(index < output_feasize, "err index in unpooling!");
+          CHECK(index < output_feasize) << "err index in unpooling!";
           input_grad_data[i] = output_grad_data[index];
         }
         input_grad_data += input_feasize;

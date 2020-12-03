@@ -17,7 +17,6 @@ limitations under the License. */
 #include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 #include "lite/backends/opencl/cl_image.h"
 #include "lite/backends/opencl/cl_include.h"
@@ -27,6 +26,22 @@ namespace lite {
 
 class CLContext {
  public:
+  ~CLContext() {
+    GetCommandQueue().finish();
+    for (size_t kidx = 0; kidx < kernels_.size(); ++kidx) {
+      // Note(ysh329): Don't need `clReleaseKernel`
+      kernels_[kidx].reset();
+    }
+    kernels_.clear();
+    kernel_offset_.clear();
+    for (auto &p : programs_) {
+      // Note(ysh329): Dont't need `clReleaseProgram`
+      p.second.reset();
+    }
+    programs_.clear();
+    LOG(INFO) << "release cl::Program, cl::Kernel finished.";
+  }
+
   cl::CommandQueue &GetCommandQueue();
 
   cl::Context &GetContext();
@@ -36,17 +51,28 @@ class CLContext {
 
   void AddKernel(const std::string &kernel_name,
                  const std::string &file_name,
-                 const std::string &options = "");
+                 const std::string &options = "",
+                 const std::string &time_stamp = "");
 
   cl::Kernel &GetKernel(const int index);
 
   cl::Kernel &GetKernel(const std::string &name);
 
-  cl::NDRange DefaultWorkSize(const CLImage &image);
+  cl::NDRange DefaultGlobalWorkSize(const CLImage &image);
+
+  cl::NDRange DefaultLocalWorkSize(cl::NDRange global_work_size,
+                                   size_t max_work_size,
+                                   int divitor = 2,
+                                   bool tune_reverse = false,
+                                   size_t user_defined_max_work_size = 0);
+
+  std::vector<cl::NDRange> GenerateLocalWorkSizes(cl::NDRange global_work_size,
+                                                  size_t max_work_size);
+  bool IsArmMali();
 
  private:
-  std::unordered_map<std::string, std::unique_ptr<cl::Program>> programs_;
-  std::vector<std::unique_ptr<cl::Kernel>> kernels_;
+  std::map<std::string, std::unique_ptr<cl::Program>> programs_;
+  std::vector<std::shared_ptr<cl::Kernel>> kernels_;
   std::map<std::string, int> kernel_offset_;
 };
 

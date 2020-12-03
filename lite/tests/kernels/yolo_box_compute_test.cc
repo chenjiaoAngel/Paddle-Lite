@@ -100,6 +100,8 @@ class YoloBoxComputeTester : public arena::TestCase {
   int class_num_ = 0;
   float conf_thresh_ = 0.f;
   int downsample_ratio_ = 0;
+  bool clip_bbox_ = true;
+  float scale_x_y_ = 1.0;
 
   DDim _dims0_{{1, 255, 13, 13}};
   DDim _dims1_{{1, 2}};
@@ -212,6 +214,8 @@ class YoloBoxComputeTester : public arena::TestCase {
     op_desc->SetAttr("class_num", class_num_);
     op_desc->SetAttr("conf_thresh", conf_thresh_);
     op_desc->SetAttr("downsample_ratio", downsample_ratio_);
+    op_desc->SetAttr("clip_bbox", clip_bbox_);
+    op_desc->SetAttr("scale_x_y", scale_x_y_);
   }
 
   void PrepareData() override {
@@ -228,14 +232,14 @@ class YoloBoxComputeTester : public arena::TestCase {
   }
 };
 
-void test_yolobox(Place place) {
-  for (int class_num : {1, 2, 3, 4}) {
-    for (float conf_thresh : {0.01, 0.2, 0.7}) {
+void TestYoloBox(Place place, float abs_error) {
+  for (int class_num : {1, 4}) {
+    for (float conf_thresh : {0.01, 0.2}) {
       for (int downsample_ratio : {16, 32}) {
-        std::vector<int> anchor({10, 13, 16, 30});
+        std::vector<int> anchor{10, 13, 16, 30, 33, 30};
         std::unique_ptr<arena::TestCase> tester(new YoloBoxComputeTester(
             place, "def", anchor, class_num, conf_thresh, downsample_ratio));
-        arena::Arena arena(std::move(tester), place, 2e-5);
+        arena::Arena arena(std::move(tester), place, abs_error);
         arena.TestPrecision();
       }
     }
@@ -243,13 +247,17 @@ void test_yolobox(Place place) {
 }
 
 TEST(YoloBox, precision) {
-// #ifdef LITE_WITH_X86
-//   Place place(TARGET(kX86));
-// #endif
-#ifdef LITE_WITH_ARM
-  Place place(TARGET(kARM));
-  test_yolobox(place);
+  float abs_error = 2e-5;
+  Place place;
+#if defined(LITE_WITH_ARM)
+  place = TARGET(kARM);
+#elif defined(LITE_WITH_XPU) && defined(LITE_WITH_XTCL)
+  place = TARGET(kXPU);
+#else
+  return;
 #endif
+
+  TestYoloBox(place, abs_error);
 }
 
 }  // namespace lite

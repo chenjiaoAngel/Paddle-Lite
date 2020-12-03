@@ -23,7 +23,7 @@ namespace math {
 std::vector<TreeNode> Tree2ColUtil::construct_patch(
     size_t root, int max_depth, const std::vector<std::vector<int>> &tr) {
   std::stack<TreeNode, std::deque<TreeNode>> stack;
-  std::unordered_map<int, bool> visited;
+  std::map<int, bool> visited;
   std::vector<TreeNode> patch;
 
   stack.push(TreeNode(root, 1, 1, 0));
@@ -55,7 +55,7 @@ void Tree2ColUtil::construct_tree(const lite::Tensor &EdgeSet,
                                   std::vector<std::vector<int>> *tr,
                                   size_t *node_count) {
   auto edge_set_dims = EdgeSet.dims();
-  PADDLE_ENFORCE_EQ(edge_set_dims[1], 2);
+  CHECK_EQ(edge_set_dims[1], 2);
   int64_t edge_count = EdgeSet.numel();
 
   const int *edge_data = EdgeSet.data<int>();
@@ -104,12 +104,12 @@ class Tree2ColFunctor<lite::TargetType::kX86, T> {
     patch_size = processing_list.size();
 
     // T *patch_data =
-    //    patch->mutable_data<T>({static_cast<int64_t>(patch_size),
+    //    patch->template mutable_data<T>({static_cast<int64_t>(patch_size),
     //                            static_cast<int64_t>(patch_elem_size)},
     //                           cpu_place);
     patch->Resize({static_cast<int64_t>(patch_size),
                    static_cast<int64_t>(patch_elem_size)});
-    auto *patch_data = patch->mutable_data<T>(lite::TargetType::kX86);
+    auto *patch_data = patch->template mutable_data<T>(lite::TargetType::kX86);
     constant(context, patch, 0);
     const T *features = node_features.data<T>();
 
@@ -166,12 +166,12 @@ class Col2TreeFunctor<lite::TargetType::kX86, T> {
       }
     }
     // T *grad_data =
-    //    in_grad->mutable_data<T>({static_cast<int64_t>(node_count),
+    //    in_grad->template mutable_data<T>({static_cast<int64_t>(node_count),
     //                              static_cast<int64_t>(grad_elem_size)},
     //                             cpu_place);
     in_grad->Resize({static_cast<int64_t>(node_count),
                      static_cast<int64_t>(grad_elem_size)});
-    auto *grad_data = in_grad->mutable_data<T>(lite::TargetType::kX86);
+    auto *grad_data = in_grad->template mutable_data<T>(lite::TargetType::kX86);
 
     constant(context, in_grad, 0);
     const T *out_g = out_grad.data<T>();

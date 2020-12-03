@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "lite/kernels/arm/concat_compute.h"
 #include <gtest/gtest.h>
+
 #include <limits>
 #include <string>
 #include <vector>
+
 #include "lite/backends/arm/math/funcs.h"
 #include "lite/core/op_registry.h"
 #include "lite/core/tensor.h"
+#include "lite/kernels/arm/concat_compute.h"
 
 namespace paddle {
 namespace lite {
@@ -95,7 +97,7 @@ void concat_compute_ref(const operators::ConcatParam& param) {
 
 TEST(concat_arm, init) {
   ConcatCompute concat;
-  ASSERT_EQ(concat.precision(), PRECISION(kFloat));
+  ASSERT_EQ(concat.precision(), PRECISION(kAny));
   ASSERT_EQ(concat.target(), TARGET(kARM));
 }
 
@@ -221,9 +223,7 @@ TEST(concat_arm, compute_input_multi) {
 }
 
 TEST(concat, retrive_op) {
-  auto concat =
-      KernelRegistry::Global().Create<TARGET(kARM), PRECISION(kFloat)>(
-          "concat");
+  auto concat = KernelRegistry::Global().Create("concat");
   ASSERT_FALSE(concat.empty());
   ASSERT_TRUE(concat.front());
 }
@@ -233,4 +233,4 @@ TEST(concat, retrive_op) {
 }  // namespace lite
 }  // namespace paddle
 
-USE_LITE_KERNEL(concat, kARM, kFloat, kNCHW, def);
+USE_LITE_KERNEL(concat, kARM, kAny, kNCHW, def);

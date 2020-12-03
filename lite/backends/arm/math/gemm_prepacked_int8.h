@@ -16,6 +16,7 @@
 #include <cmath>
 #include "lite/core/context.h"
 #include "lite/core/tensor.h"
+#include "lite/operators/op_params.h"
 
 namespace paddle {
 namespace lite {
@@ -50,7 +51,20 @@ inline int get_hblock_int8(ARMContext* ctx) {
 const int MBLOCK_INT8_OTH = 4;
 const int NBLOCK_INT8_OTH = 8;
 
-inline int get_hblock_int8(ARMContext* ctx) { return 4; }
+const int MBLOCK_INT8_DOT = 6;
+const int NBLOCK_INT8_DOT = 8;
+
+inline int get_hblock_int8(ARMContext* ctx) {
+#ifdef WITH_ARM_DOTPROD
+  if (ctx->has_dot()) {
+    return MBLOCK_INT8_DOT;
+  } else {
+    return MBLOCK_INT8_OTH;
+  }
+#else
+  return MBLOCK_INT8_OTH;
+#endif
+}
 #endif  // __aarch64__
 
 void prepackA_int8(void* out,
@@ -80,9 +94,9 @@ void gemm_prepack_int8(const int8_t* A_packed,
                        int N,
                        int K,
                        bool is_bias,
-                       bool is_relu,
                        bool is_transB,
                        const float* scale,
+                       const operators::ActivationParam act_param,
                        ARMContext* ctx);
 
 #define ROUNDUP(a, b) ((((a) + (b)-1) / (b)) * (b))

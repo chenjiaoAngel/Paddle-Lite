@@ -21,7 +21,6 @@ DEFINE_string(model_dir, "", "");
 
 namespace paddle {
 namespace lite {
-
 TEST(ModelParser, LoadProgram) {
   CHECK(!FLAGS_model_dir.empty());
   auto program = LoadProgram(FLAGS_model_dir + "/__model__");
@@ -107,7 +106,7 @@ TEST(ModelParser, LoadParamNaive) {
   ASSERT_EQ(bg_lod, tensor.lod());
   ASSERT_EQ(tensor.data_size(), size);
   auto* data = tensor.data<float>();
-  for (int i = 0; i < size; ++i) {
+  for (size_t i = 0; i < size; ++i) {
     EXPECT_NEAR(bg_data[i], data[i], 1e-6);
   }
 }
@@ -117,8 +116,17 @@ TEST(ModelParser, SaveModelNaive) {
   cpp::ProgramDesc prog;
   Scope scope;
   LoadModelPb(FLAGS_model_dir, "", "", &scope, &prog);
-  const std::string save_pb_model_path = FLAGS_model_dir + ".saved.naive";
+  const std::string save_pb_model_path = FLAGS_model_dir + ".saved";
   SaveModelNaive(save_pb_model_path, scope, prog);
+}
+
+TEST(ModelParser, LoadModelNaiveFromFile) {
+  CHECK(!FLAGS_model_dir.empty());
+  cpp::ProgramDesc prog;
+  Scope scope;
+
+  auto model_path = std::string(FLAGS_model_dir) + ".saved.nb";
+  LoadModelNaiveFromFile(model_path, &scope, &prog);
 }
 
 TEST(ModelParser, LoadModelNaiveFromMemory) {
@@ -126,12 +134,9 @@ TEST(ModelParser, LoadModelNaiveFromMemory) {
   cpp::ProgramDesc prog;
   Scope scope;
 
-  auto model_path = std::string(FLAGS_model_dir) + ".saved.naive/__model__.nb";
-  auto params_path = std::string(FLAGS_model_dir) + ".saved.naive/param.nb";
+  auto model_path = std::string(FLAGS_model_dir) + ".saved.nb";
   std::string model_buffer = lite::ReadFile(model_path);
-  std::string params_buffer = lite::ReadFile(params_path);
-
-  LoadModelNaiveFromMemory(model_buffer, params_buffer, &scope, &prog);
+  LoadModelNaiveFromMemory(model_buffer, &scope, &prog);
 }
 
 }  // namespace lite

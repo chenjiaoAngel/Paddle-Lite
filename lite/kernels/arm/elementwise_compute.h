@@ -22,8 +22,8 @@ namespace lite {
 namespace kernels {
 namespace arm {
 
-class ElementwiseAddCompute
-    : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+template <typename T, PrecisionType PType>
+class ElementwiseAddCompute : public KernelLite<TARGET(kARM), PType> {
  public:
   void Run() override;
 
@@ -38,8 +38,8 @@ class ElementwiseAddActivationCompute
   virtual ~ElementwiseAddActivationCompute() = default;
 };
 
-class ElementwiseSubCompute
-    : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+template <typename T, PrecisionType PType>
+class ElementwiseSubCompute : public KernelLite<TARGET(kARM), PType> {
  public:
   void Run() override;
 
@@ -54,16 +54,16 @@ class ElementwiseSubActivationCompute
   virtual ~ElementwiseSubActivationCompute() = default;
 };
 
-class ElementwiseMulCompute
-    : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+template <typename T, PrecisionType PType>
+class ElementwiseMulCompute : public KernelLite<TARGET(kARM), PType> {
  public:
   void Run() override;
 
   virtual ~ElementwiseMulCompute() = default;
 };
 
-class ElementwiseMulActivationCompute
-    : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+template <typename T, PrecisionType PType>
+class ElementwiseMulActivationCompute : public KernelLite<TARGET(kARM), PType> {
  public:
   void Run() override;
 
@@ -86,8 +86,8 @@ class ElementwiseMaxActivationCompute
   virtual ~ElementwiseMaxActivationCompute() = default;
 };
 
-class ElementwiseDivCompute
-    : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+template <typename T, PrecisionType PType>
+class ElementwiseDivCompute : public KernelLite<TARGET(kARM), PType> {
  public:
   void Run() override;
 
@@ -101,6 +101,30 @@ class ElementwiseDivActivationCompute
 
   virtual ~ElementwiseDivActivationCompute() = default;
 };
+
+template <typename T, PrecisionType PType>
+class ElementwiseModCompute : public KernelLite<TARGET(kARM), PType> {
+ public:
+  void Run() override;
+
+  virtual ~ElementwiseModCompute() = default;
+};
+
+template <typename T, PrecisionType PType>
+class ElementwisePowCompute : public KernelLite<TARGET(kARM), PType> {
+ public:
+  void Run() override;
+
+  virtual ~ElementwisePowCompute() = default;
+};
+
+// class ElementwiseModActivationCompute
+//     : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
+//  public:
+//   void Run() override;
+
+//   virtual ~ElementwiseModActivationCompute() = default;
+// };
 
 }  // namespace arm
 }  // namespace kernels

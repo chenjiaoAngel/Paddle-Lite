@@ -15,6 +15,7 @@ limitations under the License. */
 #pragma once
 
 #include <stdio.h>
+#include <string>
 #include <vector>
 
 #include "lite/backends/fpga/KD/llapi/zynqmp_api.h"
@@ -26,10 +27,16 @@ namespace zynqmp {
 struct ReLUParam {
  public:
   bool enabled = false;
+  float leaky_relu_factor = 0.0f;
+};
+
+struct ActiveParam {
+  enum ActiveType type = TYPE_NONE;
+  float leaky_relu_factor;
 };
 
 struct PEParam {
-  ReLUParam relu;
+  ActiveParam activeParam;
 };
 
 struct InputParam : PEParam {
@@ -71,31 +78,59 @@ struct ConvParam : PEParam {
   Tensor* filter = nullptr;
 
   int groups = 1;
+  bool deconv = false;
   std::vector<int> strides;
   std::vector<int> paddings;
   std::vector<int> kernelSize;
   std::vector<int> dilations;
 
-  Tensor* scale() { return scale_; }
+  Tensor* scale() { return &scale_; }
 
-  Tensor* bias() { return bias_; }
+  Tensor* bias() { return &bias_; }
 
   std::vector<BasicConvParam*>& splitParams() { return splitParams_; }
 
+  ~ConvParam() {
+    for (BasicConvParam* p : splitParams_) {
+      delete p;
+    }
+    splitParams_.clear();
+  }
+
  protected:
   std::vector<BasicConvParam*> splitParams_;
-  Tensor* scale_ = new Tensor();
-  Tensor* bias_ = new Tensor();
+  Tensor scale_;
+  Tensor bias_;
+};
+
+struct BasicDWConvParam {
+  Tensor input;
+  Tensor output;
+  Tensor filter;
+  Tensor bias;
+  DWconvArgs args;
+  Tensor quantizedFilter;
+  Tensor quantizedBias;
+};
+
+struct DepthwiseConvSplitParam : ConvParam {
+ public:
+  DWconvArgs args;
+
+  std::vector<BasicDWConvParam*>& splitParams() { return splitParams_; }
+
+ protected:
+  std::vector<BasicDWConvParam*> splitParams_;
 };
 
 struct DepthwiseConvParam : ConvParam {
  public:
-  Tensor* quantizedFilter() { return quantizedFilter_; }
+  Tensor* quantizedFilter() { return &quantizedFilter_; }
 
   DWconvArgs args;
 
  protected:
-  Tensor* quantizedFilter_ = new Tensor();
+  Tensor quantizedFilter_;
 };
 
 enum PoolingType : int {
@@ -117,6 +152,16 @@ struct PoolingParam : PEParam {
   PoolingArgs poolingArgs = {0};
 };
 
+struct PoolingSplitParam : ConvParam {
+ public:
+  PoolingArgs args;
+
+  std::vector<PoolingParam*>& splitParams() { return splitParams_; }
+
+ protected:
+  std::vector<PoolingParam*> splitParams_;
+};
+
 struct ConcatParam : PEParam {
  public:
   std::vector<Tensor*> inputs;
@@ -133,6 +178,13 @@ struct ElementwiseAddParam : PEParam {
   EWAddArgs ewargs;
 };
 
+struct ElementwiseMulParam : PEParam {
+ public:
+  Tensor* input_x;
+  Tensor* input_y = nullptr;
+  Tensor* output = nullptr;
+};
+
 struct FullyConnectedParam : PEParam {
  public:
   Tensor* input = nullptr;
@@ -140,13 +192,13 @@ struct FullyConnectedParam : PEParam {
   Tensor* bias = nullptr;
   Tensor* output = nullptr;
 
-  Tensor* quantizedFilter() { return quantizedFilter_; }
+  Tensor* quantizedFilter() { return &quantizedFilter_; }
 
-  Tensor* biasScale() { return biasScale_; }
+  Tensor* biasScale() { return &biasScale_; }
 
  protected:
-  Tensor* quantizedFilter_ = new Tensor();
-  Tensor* biasScale_ = new Tensor();
+  Tensor quantizedFilter_;
+  Tensor biasScale_;
 };
 
 struct SoftmaxParam : PEParam {
@@ -197,6 +249,17 @@ struct PriorBoxParam : PEParam {
   float offset;
 };
 
+struct YoloBoxParam : PEParam {
+  Tensor* input;
+  Tensor* imgSize;
+  Tensor* outputBoxes;
+  Tensor* outputScores;
+  int downsampleRatio;
+  std::vector<int> anchors;
+  int classNum;
+  float confThresh;
+};
+
 struct ScaleParam : PEParam {
  public:
   Tensor* input = nullptr;
@@ -204,15 +267,15 @@ struct ScaleParam : PEParam {
   Tensor* scale = nullptr;
   Tensor* bias = nullptr;
 
-  Tensor* alignedScale() { return alignedScale_; }
+  Tensor* alignedScale() { return &alignedScale_; }
 
-  Tensor* alignedBias() { return alignedBias_; }
+  Tensor* alignedBias() { return &alignedBias_; }
 
   ScaleArgs args = {0};
 
  protected:
-  Tensor* alignedScale_ = new Tensor();
-  Tensor* alignedBias_ = new Tensor();
+  Tensor alignedScale_;
+  Tensor alignedBias_;
 };
 
 struct ResizeParam : PEParam {
@@ -229,5 +292,24 @@ struct CropParam : PEParam {
   std::vector<int> offsets;
   std::vector<int> shape;
 };
+
+struct GRUParam : PEParam {
+ public:
+  Tensor* input = nullptr;
+  Tensor* h0 = nullptr;
+  Tensor* weight = nullptr;
+  Tensor* bias = nullptr;
+
+  Tensor* batch_gate = nullptr;
+  Tensor* batch_reset_hidden_prev = nullptr;
+  Tensor* batch_hidden = nullptr;
+  Tensor* hidden = nullptr;
+
+  std::string gate_activation = "sigmoid";
+  std::string activation = "tanh";
+  bool is_reverse = false;
+  bool origin_mode = false;
+};
+
 }  // namespace zynqmp
 }  // namespace paddle

@@ -29,11 +29,12 @@ bool SequencePoolOp::CheckShape() const {
   return true;
 }
 
-bool SequencePoolOp::InferShape() const {
+bool SequencePoolOp::InferShapeImpl() const {
   const auto *input = param_.X;
   auto out_dims = input->dims();
   out_dims[0] = input->lod()[0].size() - 1;
   param_.Out->Resize(out_dims);
+  param_.MaxIndex->Resize(out_dims);
   return true;
 }
 
@@ -42,6 +43,8 @@ bool SequencePoolOp::AttachImpl(const cpp::OpDesc &opdesc, lite::Scope *scope) {
       &scope->FindVar(opdesc.Input("X").front())->Get<lite::Tensor>());
   param_.Out =
       scope->FindVar(opdesc.Output("Out").front())->GetMutable<lite::Tensor>();
+  param_.MaxIndex = scope->FindVar(opdesc.Output("MaxIndex").front())
+                        ->GetMutable<lite::Tensor>();
   param_.pool_type = opdesc.GetAttr<std::string>("pooltype");
   CHECK(param_.X);
   CHECK(param_.Out);

@@ -35,16 +35,23 @@ void QuantDequantFusePass::Apply(const std::unique_ptr<SSAGraph>& graph) {
 
   // fuse quantized node and dequant node
   std::vector<std::string> quantized_op_types = {
-      "conv2d", "mul", "depthwise_conv2d"};
+      "conv2d", "depthwise_conv2d", "conv2d_transpose", "mul"};
   for (auto& op_type : quantized_op_types) {
     fusion::DequantOpFuser fuser(op_type);
     fuser(graph.get());
   }
-
-  // delete quant_dequant_node
-  for (auto op_type : {"pool2d", "elementwise_add"}) {
-    fusion::DeleteQuantDequantOpFuser fuser(op_type);
+  for (auto& op_type : quantized_op_types) {
+    fusion::ChannelWiseDequantOpFuser fuser(op_type);
     fuser(graph.get());
+  }
+
+  // process quant_dequant_node
+  std::vector<std::string> quant_dequant_op_types = {
+      "fake_quantize_dequantize_abs_max",
+      "fake_quantize_dequantize_moving_average_abs_max"};
+  for (auto& op_type : quant_dequant_op_types) {
+    fusion::DeleteQuantDequantOpFuser dqd_fuser(op_type);
+    dqd_fuser(graph.get());
   }
 }
 
@@ -54,5 +61,4 @@ void QuantDequantFusePass::Apply(const std::unique_ptr<SSAGraph>& graph) {
 
 REGISTER_MIR_PASS(lite_quant_dequant_fuse_pass,
                   paddle::lite::mir::QuantDequantFusePass)
-    .BindTargets({TARGET(kAny)})
-    .BindKernel("calib");
+    .BindTargets({TARGET(kAny)});

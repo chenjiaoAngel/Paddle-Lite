@@ -38,7 +38,7 @@ bool RoiAlignOpLite::CheckShape() const {
   return true;
 }
 
-bool RoiAlignOpLite::InferShape() const {
+bool RoiAlignOpLite::InferShapeImpl() const {
   auto x_dims = param_.X->dims();
   auto rois_dims = param_.ROIs->dims();
 
@@ -53,6 +53,11 @@ bool RoiAlignOpLite::AttachImpl(const cpp::OpDesc &op_desc,
       scope->FindVar(op_desc.Input("X").front())->GetMutable<lite::Tensor>();
   param_.ROIs =
       scope->FindVar(op_desc.Input("ROIs").front())->GetMutable<lite::Tensor>();
+
+  if (op_desc.HasInput("RoisLod") && !op_desc.Input("RoisLod").empty()) {
+    param_.RoisLod = scope->FindVar(op_desc.Input("RoisLod").front())
+                         ->GetMutable<lite::Tensor>();
+  }
 
   param_.spatial_scale = op_desc.GetAttr<float>("spatial_scale");
   param_.pooled_height = op_desc.GetAttr<int>("pooled_height");

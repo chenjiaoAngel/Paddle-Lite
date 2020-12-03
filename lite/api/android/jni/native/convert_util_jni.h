@@ -14,8 +14,8 @@ limitations under the License. */
 #pragma once
 
 #include <jni.h>
-#include <string>
-#include <vector>
+#include <string>  // NOLINT
+#include <vector>  // NOLINT
 
 #include "lite/api/light_api.h"
 #include "lite/api/paddle_api.h"
@@ -78,6 +78,14 @@ inline jfloatArray cpp_array_to_jfloatarray(JNIEnv *env,
   return result;
 }
 
+inline jbyteArray cpp_array_to_jbytearray(JNIEnv *env,
+                                          const int8_t *buf,
+                                          int64_t len) {
+  jbyteArray result = env->NewByteArray(len);
+  env->SetByteArrayRegion(result, 0, len, buf);
+  return result;
+}
+
 inline jintArray cpp_array_to_jintarray(JNIEnv *env,
                                         const int *buf,
                                         int64_t len) {
@@ -86,11 +94,11 @@ inline jintArray cpp_array_to_jintarray(JNIEnv *env,
   return result;
 }
 
-inline jbyteArray cpp_array_to_jbytearray(JNIEnv *env,
-                                          const int8_t *buf,
+inline jlongArray cpp_array_to_jlongarray(JNIEnv *env,
+                                          const int64_t *buf,
                                           int64_t len) {
-  jbyteArray result = env->NewByteArray(len);
-  env->SetByteArrayRegion(result, 0, len, buf);
+  jlongArray result = env->NewLongArray(len);
+  env->SetLongArrayRegion(result, 0, len, buf);
   return result;
 }
 
@@ -181,6 +189,7 @@ inline MobileConfig jmobileconfig_to_cpp_mobileconfig(JNIEnv *env,
   MobileConfig config;
 
   // set model dir
+  // NOTE: This is a deprecated API and will be removed in latter release.
   jmethodID model_dir_method = env->GetMethodID(
       mobileconfig_jclazz, "getModelDir", "()Ljava/lang/String;");
   jstring java_model_dir =
@@ -188,6 +197,27 @@ inline MobileConfig jmobileconfig_to_cpp_mobileconfig(JNIEnv *env,
   if (java_model_dir != nullptr) {
     std::string cpp_model_dir = jstring_to_cpp_string(env, java_model_dir);
     config.set_model_dir(cpp_model_dir);
+  }
+
+  // set model from file
+  jmethodID model_file_method = env->GetMethodID(
+      mobileconfig_jclazz, "getModelFromFile", "()Ljava/lang/String;");
+  jstring java_model_file =
+      (jstring)env->CallObjectMethod(jmobileconfig, model_file_method);
+  if (java_model_file != nullptr) {
+    std::string cpp_model_file = jstring_to_cpp_string(env, java_model_file);
+    config.set_model_from_file(cpp_model_file);
+  }
+
+  // set model from buffer
+  jmethodID model_buffer_method = env->GetMethodID(
+      mobileconfig_jclazz, "getModelFromBuffer", "()Ljava/lang/String;");
+  jstring java_model_buffer =
+      (jstring)env->CallObjectMethod(jmobileconfig, model_buffer_method);
+  if (java_model_buffer != nullptr) {
+    std::string cpp_model_buffer =
+        jstring_to_cpp_string(env, java_model_buffer);
+    config.set_model_from_buffer(cpp_model_buffer);
   }
 
   // set threads

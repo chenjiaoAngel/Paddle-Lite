@@ -62,24 +62,58 @@ bool UnsqueezeOp::CheckShape() const {
   return true;
 }
 
-bool UnsqueezeOp::InferShape() const {
-  std::vector<int> unsqueeze_dims = param_.axes;
+bool UnsqueezeOp::InferShapeImpl() const {
+  std::vector<int> final_axes;
+  auto axes = param_.axes;
+  auto *axes_tensor = param_.axes_tensor;
+  auto axes_tensor_vct = param_.axes_tensor_vct;
+
+  if (!axes.empty()) {
+    final_axes = axes;
+  } else if (axes_tensor != nullptr) {
+    auto *axes_tensor_data = axes_tensor->data<int>();
+    final_axes = std::vector<int>(axes_tensor_data,
+                                  axes_tensor_data + axes_tensor->numel());
+  } else if (!axes_tensor_vct.empty()) {
+    for (size_t i = 0; i < axes_tensor_vct.size(); i++) {
+      final_axes.push_back(axes_tensor_vct[i]->data<int>()[0]);
+    }
+  } else {
+    LOG(FATAL) << "Input axis error";
+  }
+
   DDim in_dims = param_.X->dims();
-  DDim out_dim = GetOutputShape(unsqueeze_dims, in_dims);
+  DDim out_dim = GetOutputShape(final_axes, in_dims);
   param_.Out->Resize(out_dim);
   return true;
 }
 
 bool UnsqueezeOp::AttachImpl(const cpp::OpDesc &opdesc, lite::Scope *scope) {
-  auto x_var = scope->FindVar(opdesc.Input("X").front());
-  auto output_var = scope->FindVar(opdesc.Output("Out").front());
-  CHECK(x_var);
-  CHECK(output_var);
-  param_.X = const_cast<lite::Tensor *>(&(x_var->Get<lite::Tensor>()));
-  param_.Out = output_var->GetMutable<lite::Tensor>();
+  AttachParam(&param_);
+  param_.X = scope->FindTensor(opdesc.Input("X").front());
+  param_.Out = scope->FindMutableTensor(opdesc.Output("Out").front());
 
   if (opdesc.HasAttr("axes")) {
     param_.axes = opdesc.GetAttr<std::vector<int>>("axes");
+  }
+
+  if (opdesc.HasInput("AxesTensor") && opdesc.Input("AxesTensor").size() > 0) {
+    auto var = scope->FindVar(opdesc.Input("AxesTensor").front());
+    if (var != nullptr) {
+      param_.axes_tensor = var->GetMutable<lite::Tensor>();
+      VLOG(5) << "load AxesTensor";
+    }
+  }
+
+  if (opdesc.HasInput("AxesTensorList") &&
+      opdesc.Input("AxesTensorList").size() > 0) {
+    auto args = opdesc.Input("AxesTensorList");
+    for (auto arg : args) {
+      auto *var = scope->FindVar(arg);
+      if (var != nullptr) {
+        param_.axes_tensor_vct.push_back(var->GetMutable<lite::Tensor>());
+      }
+    }
   }
   CHECK(param_.X) << "Input(X) of UnsqueezeOp should not be null.";
   CHECK(param_.Out) << "Output(Out) of UnsqueezeOp should not be null.";
@@ -92,10 +126,10 @@ bool Unsqueeze2Op::CheckShape() const {
   return true;
 }
 
-bool Unsqueeze2Op::InferShape() const {
-  UnsqueezeOp::InferShape();
+bool Unsqueeze2Op::InferShapeImpl() const {
+  UnsqueezeOp::InferShapeImpl();
   auto x_dims = param_.X->dims();
-  std::vector<DDim::value_type> xshape_dims(x_dims.size() + 1, 1);
+  std::vector<DDim::value_type> xshape_dims(x_dims.size() + 1, 0);
   for (size_t i = 0; i < x_dims.size(); i++) {
     xshape_dims[i + 1] = x_dims[i];
   }
@@ -105,9 +139,7 @@ bool Unsqueeze2Op::InferShape() const {
 
 bool Unsqueeze2Op::AttachImpl(const cpp::OpDesc &opdesc, lite::Scope *scope) {
   UnsqueezeOp::AttachImpl(opdesc, scope);
-  auto xshape_var = scope->FindVar(opdesc.Output("XShape").front());
-  CHECK(xshape_var);
-  param_.XShape = xshape_var->GetMutable<lite::Tensor>();
+  param_.XShape = scope->FindMutableTensor(opdesc.Output("XShape").front());
   CHECK(param_.XShape) << "Output(XShape) of Unsqueeze2Op should not be null.";
   return true;
 }

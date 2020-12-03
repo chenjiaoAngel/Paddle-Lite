@@ -14,10 +14,12 @@
 
 #pragma once
 
-#include "lite/backends/fpga/KD/float16.hpp"
-#include "lite/backends/fpga/KD/pes/conv_pe.hpp"
 #include "lite/core/kernel.h"
 #include "lite/operators/conv_op.h"
+
+#include "lite/backends/fpga/KD/float16.hpp"
+#include "lite/backends/fpga/KD/pes/conv_pe.hpp"
+#include "lite/backends/fpga/KD/pes/depthwise_conv_pe.hpp"
 
 namespace paddle {
 namespace lite {
@@ -33,10 +35,9 @@ class ConvCompute
 
   void Run() override;
 
-  ~ConvCompute() {}
-
  private:
-  zynqmp::ConvPE pe_;
+  zynqmp::ConvPE conv_pe_;
+  zynqmp::DepthwiseConvPE dw_conv_pe_;
 };
 
 }  // namespace fpga

@@ -19,6 +19,26 @@ namespace paddle {
 namespace lite {
 namespace utils {
 namespace cv {
+<<<<<<< HEAD
+=======
+void ImageFlip::choose(const uint8_t* src,
+                       uint8_t* dst,
+                       ImageFormat srcFormat,
+                       int srcw,
+                       int srch,
+                       FlipParam flip_param) {
+  if (srcFormat == GRAY) {
+    flip_hwc1(src, dst, srcw, srch, flip_param);
+  } else if (srcFormat == BGR || srcFormat == RGB) {
+    flip_hwc3(src, dst, srcw, srch, flip_param);
+  } else if (srcFormat == BGRA || srcFormat == RGBA) {
+    flip_hwc4(src, dst, srcw, srch, flip_param);
+  } else {
+    printf("this srcFormat: %d does not support! \n", srcFormat);
+    return;
+  }
+}
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 // gray
 void flip_hwc1_x(const uint8_t* src, uint8_t* dst, int w_in, int h_in);
 void flip_hwc1_y(const uint8_t* src, uint8_t* dst, int w_in, int h_in);
@@ -43,6 +63,7 @@ void flip_hwc1(const uint8_t* src,
     flip_hwc1_y(src, dst, srcw, srch);
   } else if (flip_param == XY) {
     flip_hwc1_xy(src, dst, srcw, srch);
+<<<<<<< HEAD
   }
 }
 
@@ -60,6 +81,14 @@ void flip_hwc2(const uint8_t* src,
   // }
 }
 
+=======
+  } else {
+    printf("its doesn't support Flip: %d \n", static_cast<int>(flip_param));
+    return;
+  }
+}
+
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 void flip_hwc3(const uint8_t* src,
                uint8_t* dst,
                int srcw,
@@ -71,6 +100,12 @@ void flip_hwc3(const uint8_t* src,
     flip_hwc3_y(src, dst, srcw, srch);
   } else if (flip_param == XY) {
     flip_hwc3_xy(src, dst, srcw, srch);
+<<<<<<< HEAD
+=======
+  } else {
+    printf("its doesn't support Flip: %d \n", static_cast<int>(flip_param));
+    return;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   }
 }
 
@@ -85,6 +120,12 @@ void flip_hwc4(const uint8_t* src,
     flip_hwc4_y(src, dst, srcw, srch);
   } else if (flip_param == XY) {
     flip_hwc4_xy(src, dst, srcw, srch);
+<<<<<<< HEAD
+=======
+  } else {
+    printf("its doesn't support Flip: %d \n", static_cast<int>(flip_param));
+    return;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   }
 }
 /*
@@ -98,7 +139,12 @@ rotate:
 */
 void flip_hwc1_x(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
   int h = h_in - 1;
+<<<<<<< HEAD
   uint8_t zerobuff[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+=======
+  uint8_t* zerobuff = new uint8_t[w_in];
+  memset(zerobuff, 0.0, sizeof(uint8_t) * w_in);
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 #pragma omp parallel for
   for (int i = 0; i < h_in; i += 4) {
     const uint8_t* inptr0 = src + i * w_in;
@@ -140,7 +186,14 @@ void flip_hwc1_x(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
                                                   // 26, 27}"
           "ld1  {v3.8b}, [%[inptr3]], #8    \n"   // v0={30,31,32, 33, 34, 35,
                                                   // 36, 37}"
+<<<<<<< HEAD
 
+=======
+          "prfm   pldl1keep, [%[inptr0]]        \n"
+          "prfm   pldl1keep, [%[inptr1]]        \n"
+          "prfm   pldl1keep, [%[inptr2]]        \n"
+          "prfm   pldl1keep, [%[inptr3]]        \n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "st1 {v0.8b}, [%[outptr0]], #8             \n"   // 00 10 20 30 04 14
                                                            // 24 34
           "st1 {v1.8b}, [%[outptr1]], #8              \n"  // 02 12 22 32
@@ -167,6 +220,13 @@ void flip_hwc1_x(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
           "26 27\n"
           "vld1.8  {d12}, [%[inptr3]]!   @ zip load r1, d6 = 30 31 32 33 34 35 "
           "36 37\n"
+<<<<<<< HEAD
+=======
+          "pld [%[inptr0]]                         @ preload a, 64byte\n"
+          "pld [%[inptr1]]                         @ preload a, 64byte\n"
+          "pld [%[inptr2]]                         @ preload a, 64byte\n"
+          "pld [%[inptr3]]                         @ preload a, 64byte\n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
           "vst1.32  {d0},    [%[outptr0]]!   @ write d0(q0,low),r00,r10 20 30\n"
           "vst1.32  {d4},    [%[outptr1]]!   @ write d4(q0,low),r01,r11 21 31\n"
@@ -208,6 +268,10 @@ void flip_hwc1_x(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
       }
     }
   }
+<<<<<<< HEAD
+=======
+  delete[] zerobuff;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 
 /*
@@ -221,7 +285,12 @@ flip:
 */
 void flip_hwc1_y(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
   int64_t stride_w = 8;
+<<<<<<< HEAD
   uint8_t zerobuff[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+=======
+  uint8_t* zerobuff = new uint8_t[w_in];
+  memset(zerobuff, 0.0, sizeof(uint8_t) * w_in);
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 #pragma omp parallel for
   for (int i = 0; i < h_in; i += 4) {
     const uint8_t* inptr0 = src + i * w_in;
@@ -272,7 +341,14 @@ void flip_hwc1_y(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
                                                    // 01 00
           "rev64  v7.8b, v3.8b                \n"  //@ reverse 07 06 05 04 03 02
                                                    // 01 00
+<<<<<<< HEAD
 
+=======
+          "prfm   pldl1keep, [%[inptr0]]        \n"
+          "prfm   pldl1keep, [%[inptr1]]        \n"
+          "prfm   pldl1keep, [%[inptr2]]        \n"
+          "prfm   pldl1keep, [%[inptr3]]        \n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "st1 {v4.8b}, [%[outptr0]]             \n"  // 00 10 20 30 04 14 24 34
           "st1 {v5.8b}, [%[outptr1]]              \n"  // 02 12 22 32
           "st1 {v6.8b}, [%[outptr2]]             \n"   // 01 11 21 31
@@ -310,7 +386,14 @@ void flip_hwc1_y(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
           "vrev64.8  d9, d8               @ reverse 07 06 05 04 03 02 01 00 \n"
           "vrev64.8  d13, d12               @ reverse 07 06 05 04 03 02 01 00 "
           "\n"
+<<<<<<< HEAD
 
+=======
+          "pld [%[inptr0]]                         @ preload a, 64byte\n"
+          "pld [%[inptr1]]                         @ preload a, 64byte\n"
+          "pld [%[inptr2]]                         @ preload a, 64byte\n"
+          "pld [%[inptr3]]                         @ preload a, 64byte\n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "vst1.32  {d1},    [%[outptr0]]   @ write d0(q0,low),r00,r10 20 30\n"
           "vst1.32  {d5},    [%[outptr1]]   @ write d4(q0,low),r01,r11 21 31\n"
           "vst1.32  {d9},    [%[outptr2]]   @ write d4(q0,low),r01,r11 21 31\n"
@@ -361,6 +444,10 @@ void flip_hwc1_y(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
       }
     }
   }
+<<<<<<< HEAD
+=======
+  delete[] zerobuff;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 
 /*
@@ -374,7 +461,12 @@ flip:
 */
 void flip_hwc1_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
   int64_t stride_w = 8;
+<<<<<<< HEAD
   uint8_t zerobuff[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+=======
+  uint8_t* zerobuff = new uint8_t[w_in];
+  memset(zerobuff, 0.0, sizeof(uint8_t) * w_in);
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 #pragma omp parallel for
   for (int i = 0; i < h_in; i += 4) {
     const uint8_t* inptr0 = src + i * w_in;
@@ -386,6 +478,7 @@ void flip_hwc1_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
     uint8_t* outptr1 = outptr0 - w_in;
     uint8_t* outptr2 = outptr1 - w_in;
     uint8_t* outptr3 = outptr2 - w_in;
+<<<<<<< HEAD
     if (i + 3 >= h_in) {
       switch ((i + 3) - h_in) {
         case 3:
@@ -397,6 +490,19 @@ void flip_hwc1_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
         case 1:
           inptr2 = zerobuff;
           outptr2 = zerobuff;
+=======
+    if (i + 4 > h_in) {
+      switch ((i + 4) - h_in) {
+        case 3:
+          inptr1 = zerobuff;
+          outptr1 = zerobuff;
+        case 2:
+          inptr2 = zerobuff;
+          outptr2 = zerobuff;
+        case 1:
+          inptr3 = zerobuff;
+          outptr3 = zerobuff;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
         case 0:
           inptr3 = zerobuff;
           outptr3 = zerobuff;
@@ -425,7 +531,14 @@ void flip_hwc1_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
                                                    // 01 00
           "rev64  v7.8b, v3.8b                \n"  //@ reverse 07 06 05 04 03 02
                                                    // 01 00
+<<<<<<< HEAD
 
+=======
+          "prfm   pldl1keep, [%[inptr0]]        \n"
+          "prfm   pldl1keep, [%[inptr1]]        \n"
+          "prfm   pldl1keep, [%[inptr2]]        \n"
+          "prfm   pldl1keep, [%[inptr3]]        \n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "st1 {v4.8b}, [%[outptr0]]             \n"  // 00 10 20 30 04 14 24 34
           "st1 {v5.8b}, [%[outptr1]]              \n"  // 02 12 22 32
           "st1 {v6.8b}, [%[outptr2]]             \n"   // 01 11 21 31
@@ -463,7 +576,14 @@ void flip_hwc1_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
           "vrev64.8  d9, d8               @ reverse 07 06 05 04 03 02 01 00 \n"
           "vrev64.8  d13, d12               @ reverse 07 06 05 04 03 02 01 00 "
           "\n"
+<<<<<<< HEAD
 
+=======
+          "pld [%[inptr0]]                         @ preload a, 64byte\n"
+          "pld [%[inptr1]]                         @ preload a, 64byte\n"
+          "pld [%[inptr2]]                         @ preload a, 64byte\n"
+          "pld [%[inptr3]]                         @ preload a, 64byte\n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "vst1.32  {d1},    [%[outptr0]]   @ write d0(q0,low),r00,r10 20 30\n"
           "vst1.32  {d5},    [%[outptr1]]   @ write d4(q0,low),r01,r11 21 31\n"
           "vst1.32  {d9},    [%[outptr2]]   @ write d4(q0,low),r01,r11 21 31\n"
@@ -492,6 +612,7 @@ void flip_hwc1_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
     outptr1 += stride_w - 1;
     outptr0 += stride_w - 1;
     for (; j < w_in; j++) {
+<<<<<<< HEAD
       if (i + 3 >= h_in) {
         switch ((i + 3) - h_in) {
           case 0:
@@ -502,6 +623,18 @@ void flip_hwc1_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
           case 2:
             *outptr0-- = *inptr0++;
           case 3:
+=======
+      if (i + 4 > h_in) {
+        switch ((i + 4) - h_in) {
+          case 3:
+            *outptr2-- = *inptr2++;
+          case 2:
+            *outptr1-- = *inptr1++;
+          // inptr1 = zerobuff;
+          case 1:
+            *outptr0-- = *inptr0++;
+          case 0:
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           // inptr3 = zerobuff;
           default:
             break;
@@ -514,16 +647,28 @@ void flip_hwc1_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
       }
     }
   }
+<<<<<<< HEAD
+=======
+  delete[] zerobuff;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 
 void flip_hwc3_x(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
   int h = h_in - 1;
   int win = w_in * 3;
+<<<<<<< HEAD
   uint8_t zerobuff[30000];
   memset(zerobuff, 0, win * sizeof(uint8_t));
   uint8_t zerobuff2[30000];
   memset(zerobuff2, 0, win * sizeof(uint8_t));
 #pragma omp parallel for
+=======
+  uint8_t* zerobuff = new uint8_t[win];
+  memset(zerobuff, 0, win * sizeof(uint8_t));
+  uint8_t* zerobuff2 = new uint8_t[win];
+  memset(zerobuff2, 0, win * sizeof(uint8_t));
+  // #pragma omp parallel for
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   for (int i = 0; i < h_in; i += 4) {
     const uint8_t* inptr0 = src + i * win;
     const uint8_t* inptr1 = inptr0 + win;
@@ -568,7 +713,14 @@ void flip_hwc3_x(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
           "ld3  {v9.8b, v10.8b, v11.8b}, [%[inptr3]], #24    \n"  // v0={30,31,32,
                                                                   // 33, 34, 35,
                                                                   // 36, 37}"
+<<<<<<< HEAD
 
+=======
+          "prfm   pldl1keep, [%[inptr0]]        \n"
+          "prfm   pldl1keep, [%[inptr1]]        \n"
+          "prfm   pldl1keep, [%[inptr2]]        \n"
+          "prfm   pldl1keep, [%[inptr3]]        \n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "st3 {v0.8b, v1.8b, v2.8b}, [%[outptr0]], #24             \n"   // 00
                                                                           // 10
                                                                           // 20
@@ -619,6 +771,13 @@ void flip_hwc3_x(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
           "vld3.8  {d9, d10, d11}, [%[inptr3]]!   @ zip load r1, d6 = 30 31 32 "
           "33 34 35 36 37\n"
 
+<<<<<<< HEAD
+=======
+          "pld [%[inptr0]]                         @ preload a, 64byte\n"
+          "pld [%[inptr1]]                         @ preload a, 64byte\n"
+          "pld [%[inptr2]]                         @ preload a, 64byte\n"
+          "pld [%[inptr3]]                         @ preload a, 64byte\n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "vst3.8  {d0, d1, d2},    [%[outptr0]]!   @ write d0(q0,low),r00,r10 "
           "20 30\n"
           "vst3.8  {d3, d4, d5},    [%[outptr1]]!   @ write d4(q0,low),r01,r11 "
@@ -679,13 +838,24 @@ void flip_hwc3_x(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
       }
     }
   }
+<<<<<<< HEAD
+=======
+  delete[] zerobuff;
+  delete[] zerobuff2;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 
 void flip_hwc3_y(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
   int win = w_in * 3;
+<<<<<<< HEAD
   uint8_t zerobuff[30000];
   memset(zerobuff, 0, win * sizeof(uint8_t));
   uint8_t zerobuff2[30000];
+=======
+  uint8_t* zerobuff = new uint8_t[win];
+  memset(zerobuff, 0, win * sizeof(uint8_t));
+  uint8_t* zerobuff2 = new uint8_t[win];
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   memset(zerobuff2, 0, win * sizeof(uint8_t));
   int64_t stride_w = 24;
 #pragma omp parallel for
@@ -733,7 +903,14 @@ void flip_hwc3_y(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
           "ld3  {v9.8b, v10.8b, v11.8b}, [%[inptr3]], #24    \n"  // v0={30,31,32,
                                                                   // 33, 34, 35,
                                                                   // 36, 37}"
+<<<<<<< HEAD
 
+=======
+          "prfm   pldl1keep, [%[inptr0]]        \n"
+          "prfm   pldl1keep, [%[inptr1]]        \n"
+          "prfm   pldl1keep, [%[inptr2]]        \n"
+          "prfm   pldl1keep, [%[inptr3]]        \n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "rev64  v12.8b, v0.8b                \n"  //@ reverse 07 06 05 04 03
                                                     // 02 01 00 b
           "rev64  v13.8b, v1.8b                \n"  //@ reverse 07 06 05 04 03
@@ -840,7 +1017,14 @@ void flip_hwc3_y(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
           "\n"
           "vrev64.8  d23, d11               @ reverse 07 06 05 04 03 02 01 00 "
           "\n"
+<<<<<<< HEAD
 
+=======
+          "pld [%[inptr0]]                         @ preload a, 64byte\n"
+          "pld [%[inptr1]]                         @ preload a, 64byte\n"
+          "pld [%[inptr2]]                         @ preload a, 64byte\n"
+          "pld [%[inptr3]]                         @ preload a, 64byte\n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "vst3.8  {d12, d13, d14},    [%[outptr0]]   @ write "
           "d0(q0,low),r00,r10 20 30\n"
           "vst3.8  {d15, d16, d17},    [%[outptr1]]   @ write "
@@ -930,14 +1114,25 @@ void flip_hwc3_y(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
       }
     }
   }
+<<<<<<< HEAD
+=======
+  delete[] zerobuff;
+  delete[] zerobuff2;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 
 void flip_hwc3_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
   int64_t stride_w = 24;
   int win = w_in * 3;
+<<<<<<< HEAD
   uint8_t zerobuff[30000];
   memset(zerobuff, 0, win * sizeof(uint8_t));
   uint8_t zerobuff2[30000];
+=======
+  uint8_t* zerobuff = new uint8_t[win];
+  memset(zerobuff, 0, win * sizeof(uint8_t));
+  uint8_t* zerobuff2 = new uint8_t[win];
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   memset(zerobuff2, 0, win * sizeof(uint8_t));
 #pragma omp parallel for
   for (int i = 0; i < h_in; i += 4) {
@@ -1012,7 +1207,14 @@ void flip_hwc3_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
                                                      // 02 01 00
           "rev64  v23.8b, v11.8b                \n"  //@ reverse 07 06 05 04 03
                                                      // 02 01 00
+<<<<<<< HEAD
 
+=======
+          "prfm   pldl1keep, [%[inptr0]]        \n"
+          "prfm   pldl1keep, [%[inptr1]]        \n"
+          "prfm   pldl1keep, [%[inptr2]]        \n"
+          "prfm   pldl1keep, [%[inptr3]]        \n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "st3 {v12.8b, v13.8b, v14.8b}, [%[outptr0]]             \n"   // 00 10
                                                                         // 20 30
                                                                         // 04 14
@@ -1091,6 +1293,13 @@ void flip_hwc3_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
           "\n"
           "vrev64.8  d23, d11               @ reverse 07 06 05 04 03 02 01 00 "
           "\n"
+<<<<<<< HEAD
+=======
+          "pld [%[inptr0]]                         @ preload a, 64byte\n"
+          "pld [%[inptr1]]                         @ preload a, 64byte\n"
+          "pld [%[inptr2]]                         @ preload a, 64byte\n"
+          "pld [%[inptr3]]                         @ preload a, 64byte\n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
           "vst3.8  {d12, d13, d14},    [%[outptr0]]   @ write "
           "d0(q0,low),r00,r10 20 30\n"
@@ -1181,14 +1390,25 @@ void flip_hwc3_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
       }
     }
   }
+<<<<<<< HEAD
+=======
+  delete[] zerobuff;
+  delete[] zerobuff2;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 
 void flip_hwc4_x(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
   int h = h_in - 1;
   int win = w_in * 4;
+<<<<<<< HEAD
   uint8_t zerobuff[40000];
   memset(zerobuff, 0, win * sizeof(uint8_t));
   uint8_t zerobuff2[40000];
+=======
+  uint8_t* zerobuff = new uint8_t[win];
+  memset(zerobuff, 0, win * sizeof(uint8_t));
+  uint8_t* zerobuff2 = new uint8_t[win];
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   memset(zerobuff2, 0, win * sizeof(uint8_t));
 #pragma omp parallel for
   for (int i = 0; i < h_in; i += 4) {
@@ -1247,7 +1467,14 @@ void flip_hwc4_x(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
           // 35,
           // 36,
           // 37}"
+<<<<<<< HEAD
 
+=======
+          "prfm   pldl1keep, [%[inptr0]]        \n"
+          "prfm   pldl1keep, [%[inptr1]]        \n"
+          "prfm   pldl1keep, [%[inptr2]]        \n"
+          "prfm   pldl1keep, [%[inptr3]]        \n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "st4 {v0.8b, v1.8b, v2.8b, v3.8b}, [%[outptr0]], #32  \n"  // 00 10 20
                                                                      // 30 04 14
                                                                      // 24 34
@@ -1291,6 +1518,13 @@ void flip_hwc4_x(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
           "22 23 24 25 26 27\n"
           "vld4.8  {d12, d13, d14, d15}, [%[inptr3]]!   @ zip load r1, d6 = 30 "
           "31 32 33 34 35 36 37\n"
+<<<<<<< HEAD
+=======
+          "pld [%[inptr0]]                         @ preload a, 64byte\n"
+          "pld [%[inptr1]]                         @ preload a, 64byte\n"
+          "pld [%[inptr2]]                         @ preload a, 64byte\n"
+          "pld [%[inptr3]]                         @ preload a, 64byte\n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
           "vst4.8  {d0, d1, d2, d3},    [%[outptr0]]!   @ write "
           "d0(q0,low),r00,r10 20 30\n"
@@ -1359,13 +1593,24 @@ void flip_hwc4_x(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
       }
     }
   }
+<<<<<<< HEAD
+=======
+  delete[] zerobuff;
+  delete[] zerobuff2;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 
 void flip_hwc4_y(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
   int win = w_in * 4;
+<<<<<<< HEAD
   uint8_t zerobuff[40000];
   memset(zerobuff, 0, win * sizeof(uint8_t));
   uint8_t zerobuff2[40000];
+=======
+  uint8_t* zerobuff = new uint8_t[win];
+  memset(zerobuff, 0, win * sizeof(uint8_t));
+  uint8_t* zerobuff2 = new uint8_t[win];
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   memset(zerobuff2, 0, win * sizeof(uint8_t));
   int64_t stride_w = 32;
 #pragma omp parallel for
@@ -1461,7 +1706,14 @@ void flip_hwc4_y(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
                                                     // 02 01 00
           "rev64  v7.8b, v15.8b                \n"  //@ reverse 07 06 05 04 03
                                                     // 02 01 00
+<<<<<<< HEAD
 
+=======
+          "prfm   pldl1keep, [%[inptr0]]        \n"
+          "prfm   pldl1keep, [%[inptr1]]        \n"
+          "prfm   pldl1keep, [%[inptr2]]        \n"
+          "prfm   pldl1keep, [%[inptr3]]        \n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "st4 {v16.8b, v17.8b, v18.8b, v19.8b}, [%[outptr0]]             \n"  // 00 10 20 30 04 14 24 34
           "st4 {v20.8b, v21.8b, v22.8b, v23.8b}, [%[outptr1]]              \n"  // 02 12 22 32
           "st4 {v0.8b, v1.8b, v2.8b, v3.8b}, [%[outptr2]]             \n"  // 01
@@ -1556,6 +1808,13 @@ void flip_hwc4_y(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
           "\n"
           "vrev64.8  d7, d15               @ reverse 07 06 05 04 03 02 01 00 "
           "\n"
+<<<<<<< HEAD
+=======
+          "pld [%[inptr0]]                         @ preload a, 64byte\n"
+          "pld [%[inptr1]]                         @ preload a, 64byte\n"
+          "pld [%[inptr2]]                         @ preload a, 64byte\n"
+          "pld [%[inptr3]]                         @ preload a, 64byte\n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
           "vst4.8  {d16, d17, d18, d19},    [%[outptr0]]   @ write "
           "d0(q0,low),r00,r10 20 30\n"
@@ -1653,14 +1912,25 @@ void flip_hwc4_y(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
       }
     }
   }
+<<<<<<< HEAD
+=======
+  delete[] zerobuff;
+  delete[] zerobuff2;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 
 void flip_hwc4_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
   int64_t stride_w = 32;
   int win = w_in * 4;
+<<<<<<< HEAD
   uint8_t zerobuff[40000];
   memset(zerobuff, 0, win * sizeof(uint8_t));
   uint8_t zerobuff2[40000];
+=======
+  uint8_t* zerobuff = new uint8_t[win];
+  memset(zerobuff, 0, win * sizeof(uint8_t));
+  uint8_t* zerobuff2 = new uint8_t[win];
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   memset(zerobuff2, 0, win * sizeof(uint8_t));
 #pragma omp parallel for
   for (int i = 0; i < h_in; i += 4) {
@@ -1755,7 +2025,14 @@ void flip_hwc4_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
                                                     // 02 01 00
           "rev64  v7.8b, v15.8b                \n"  //@ reverse 07 06 05 04 03
                                                     // 02 01 00
+<<<<<<< HEAD
 
+=======
+          "prfm   pldl1keep, [%[inptr0]]        \n"
+          "prfm   pldl1keep, [%[inptr1]]        \n"
+          "prfm   pldl1keep, [%[inptr2]]        \n"
+          "prfm   pldl1keep, [%[inptr3]]        \n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "st4 {v16.8b, v17.8b, v18.8b, v19.8b}, [%[outptr0]]             \n"  // 00 10 20 30 04 14 24 34
           "st4 {v20.8b, v21.8b, v22.8b, v23.8b}, [%[outptr1]]              \n"  // 02 12 22 32
           "st4 {v0.8b, v1.8b, v2.8b, v3.8b}, [%[outptr2]]             \n"  // 01
@@ -1853,6 +2130,13 @@ void flip_hwc4_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
           "vrev64.8  d7, d15               @ reverse 07 06 05 04 03 02 01 00 "
           "\n"
 
+<<<<<<< HEAD
+=======
+          "pld [%[inptr0]]                         @ preload a, 64byte\n"
+          "pld [%[inptr1]]                         @ preload a, 64byte\n"
+          "pld [%[inptr2]]                         @ preload a, 64byte\n"
+          "pld [%[inptr3]]                         @ preload a, 64byte\n"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
           "vst4.8  {d16, d17, d18, d19},    [%[outptr0]]   @ write "
           "d0(q0,low),r00,r10 20 30\n"
           "vst4.8  {d20, d21, d22, d23},    [%[outptr1]]   @ write "
@@ -1949,6 +2233,11 @@ void flip_hwc4_xy(const uint8_t* src, uint8_t* dst, int w_in, int h_in) {
       }
     }
   }
+<<<<<<< HEAD
+=======
+  delete[] zerobuff;
+  delete[] zerobuff2;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 }  // namespace cv
 }  // namespace utils

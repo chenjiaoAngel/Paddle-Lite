@@ -22,12 +22,10 @@ namespace paddle {
 namespace lite {
 namespace kernels {
 namespace arm {
+
+template <typename IndexType>
 class GatherCompute : public KernelLite<TARGET(kARM), PRECISION(kFloat)> {
  public:
-  using param_t = operators::GatherParam;
-
-  void PrepareForRun() override;
-
   void Run() override;
 
   ~GatherCompute() {}

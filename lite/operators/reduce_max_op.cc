@@ -39,7 +39,7 @@ bool ReduceMaxOp::CheckShape() const {
   return true;
 }
 
-bool ReduceMaxOp::InferShape() const {
+bool ReduceMaxOp::InferShapeImpl() const {
   auto dims = param_.dim;
   auto x_dims = param_.X->dims();
   bool reduce_all = false;
@@ -52,7 +52,7 @@ bool ReduceMaxOp::InferShape() const {
       }
     }
   }
-  sort(dims.begin(), dims.end());
+  std::stable_sort(dims.begin(), dims.end());
   if (dims.size() == 0) {
     reduce_all = true;
   }

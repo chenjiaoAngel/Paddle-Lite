@@ -23,6 +23,7 @@ limitations under the License. */
 namespace paddle {
 namespace zynqmp {
 
+static struct None none_;
 static struct NCHW nchw_;
 static struct NHWC nhwc_;
 static struct NC nc_;
@@ -31,6 +32,10 @@ static struct N n_;
 
 class Shape {
  public:
+  std::function<int(Shape& s)> aligment_fuction = [](Shape& s) {  // NOLINT
+    return s.layout_->alignedElementCount(s.dims_);
+  };
+
   explicit Shape(std::vector<int> dims) { dims_ = dims; }
 
   Shape(LayoutType type, std::vector<int> dims) {
@@ -41,6 +46,10 @@ class Shape {
   Shape(const Shape& src) {
     dims_ = src.dims_;
     setLayoutType(src.layoutType_);
+  }
+
+  void setAligmentFunction(std::function<int(Shape& s)> f) {  // NOLINT
+    aligment_fuction = f;
   }
 
   bool shouldAlign() {
@@ -71,17 +80,18 @@ class Shape {
 
   std::vector<int> dims() { return dims_; }
 
-  size_t memorySize(int cellSize) {
-    return layout_->alignedElementCount(dims_) * cellSize;
-  }
+  size_t memorySize(int cellSize) { return aligment_fuction(*this) * cellSize; }
 
   int numel() { return layout_->elementCount(dims_); }
 
-  int alignedElementCount() { return layout_->alignedElementCount(dims_); }
+  int alignedElementCount() { return aligment_fuction(*this); }
 
   void setLayoutType(LayoutType layout) {
     this->layoutType_ = layout;
     switch (layout) {
+      case None:
+        layout_ = &none_;
+        break;
       case NCHW:
         layout_ = &nchw_;
         break;

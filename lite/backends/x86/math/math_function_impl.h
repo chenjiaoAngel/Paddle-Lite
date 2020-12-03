@@ -59,7 +59,7 @@ void ColwiseSum<Target, T>::operator()(const lite::Context<Target>& context,
                                        lite::TensorLite* out) {
   auto in_dims = input.dims();
   auto size = input.numel() / in_dims[0];
-  PADDLE_ENFORCE_EQ(out->numel(), size);
+  CHECK_EQ(out->numel(), size);
 
   auto in = lite::fluid::EigenMatrix<T>::From(input);
   auto vec = lite::fluid::EigenVector<T>::Flatten(*out);
@@ -81,9 +81,9 @@ class ColwiseSum<lite::TargetType::kX86, T> {
     auto& in_dims = input.dims();
     auto height = in_dims[0];
     auto size = in_dims[1];
-    PADDLE_ENFORCE_EQ(out->numel(), size);
+    CHECK_EQ(out->numel(), size);
 
-    T* out_buf = out->mutable_data<T>(out->target());
+    T* out_buf = out->template mutable_data<T>(out->target());
     const T* in_buf = input.data<T>();
 
     for (size_t i = 0; i < static_cast<size_t>(height); ++i) {
@@ -103,8 +103,8 @@ void RowwiseMean<Target, T>::operator()(const lite::Context<Target>& context,
                                         const lite::TensorLite& input,
                                         lite::TensorLite* out) {
   auto in_dims = input.dims();
-  PADDLE_ENFORCE_EQ(in_dims.size(), 2U);
-  PADDLE_ENFORCE_EQ(out->numel(), in_dims[0]);
+  CHECK_EQ(in_dims.size(), 2U);
+  CHECK_EQ(out->numel(), in_dims[0]);
 
   auto in = lite::fluid::EigenMatrix<T>::From(input);
   auto vec = lite::fluid::EigenVector<T>::Flatten(*out);
@@ -124,12 +124,12 @@ class RowwiseMean<lite::TargetType::kX86, T> {
                   const lite::TensorLite& input,
                   lite::TensorLite* out) {
     auto& in_dims = input.dims();
-    PADDLE_ENFORCE_EQ(in_dims.size(), 2U);
+    CHECK_EQ(in_dims.size(), 2U);
     auto height = in_dims[0];
     auto size = in_dims[1];
-    PADDLE_ENFORCE_EQ(out->numel(), height);
+    CHECK_EQ(out->numel(), height);
     auto inv_size = 1.0 / size;
-    T* out_buf = out->mutable_data<T>(out->target());
+    T* out_buf = out->template mutable_data<T>(out->target());
     const T* in_buf = input.data<T>();
 
     for (size_t i = 0; i < static_cast<size_t>(height); ++i) {
@@ -147,8 +147,8 @@ void RowwiseSum<Target, T>::operator()(const lite::Context<Target>& context,
                                        const lite::TensorLite& input,
                                        lite::TensorLite* out) {
   auto in_dims = input.dims();
-  PADDLE_ENFORCE_EQ(in_dims.size(), 2U);
-  PADDLE_ENFORCE_EQ(out->numel(), in_dims[0]);
+  CHECK_EQ(in_dims.size(), 2U);
+  CHECK_EQ(out->numel(), in_dims[0]);
 
   auto in = lite::fluid::EigenMatrix<T>::From(input);
   auto vec = lite::fluid::EigenVector<T>::Flatten(*out);
@@ -168,12 +168,12 @@ class RowwiseSum<lite::TargetType::kX86, T> {
                   const lite::TensorLite& input,
                   lite::TensorLite* out) {
     auto& in_dims = input.dims();
-    PADDLE_ENFORCE_EQ(in_dims.size(), 2U);
+    CHECK_EQ(in_dims.size(), 2U);
     auto height = in_dims[0];
     auto size = in_dims[1];
-    PADDLE_ENFORCE_EQ(out->numel(), height);
+    CHECK_EQ(out->numel(), height);
 
-    T* out_buf = out->mutable_data<T>(out->target());
+    T* out_buf = out->template mutable_data<T>(out->target());
     const T* in_buf = input.data<T>();
 
     for (size_t i = 0; i < static_cast<size_t>(height); ++i) {

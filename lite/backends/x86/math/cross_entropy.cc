@@ -50,14 +50,14 @@ class CrossEntropyFunctor<lite::TargetType::kX86, T> {
                 .reshape(batch_axis_remain)
                 .sum(Eigen::DSizes<int, 1>(1)));
     } else {
-      const T* prob_data = prob->data<T>();
-      T* loss_data = out->mutable_data<T>();
+      const T* prob_data = prob->template data<T>();
+      T* loss_data = out->template mutable_data<T>();
 
       const int64_t* label_data = labels->data<int64_t>();
       for (int i = 0; i < batch_size; ++i) {
         for (int j = 0; j < num_remain; j++) {
           int lbl = label_data[i * num_remain + j];
-          PADDLE_ENFORCE((lbl >= 0 && lbl < axis_dim) || lbl == ignore_index);
+          CHECK((lbl >= 0 && lbl < axis_dim) || lbl == ignore_index);
           int index = i * num_classes + lbl * num_remain + j;
           int loss_idx = i * num_remain + j;
           loss_data[loss_idx] =

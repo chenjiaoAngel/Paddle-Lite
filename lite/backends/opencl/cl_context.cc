@@ -1,11 +1,8 @@
 /* Copyright (c) 2018 PaddlePaddle Authors. All Rights Reserved.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,16 +34,20 @@ cl::Program &CLContext::GetProgram(const std::string &file_name,
   std::string program_key = program_key_ss.str();
   auto it = programs_.find(program_key);
   if (it != programs_.end()) {
+#ifdef LITE_WITH_LOG
     VLOG(3) << " --- program -> " << program_key << " has been built --- ";
+#endif
     return *(it->second);
   }
 
-  auto program = CLRuntime::Global()->CreateProgram(
-      GetContext(), CLRuntime::Global()->cl_path() + "/cl_kernel/" + file_name);
-
+  auto program = CLRuntime::Global()->CreateProgram(GetContext(), file_name);
+#ifdef LITE_WITH_LOG
   VLOG(3) << " --- begin build program -> " << program_key << " --- ";
+#endif
   CLRuntime::Global()->BuildProgram(program.get(), options);
+#ifdef LITE_WITH_LOG
   VLOG(3) << " --- end build program -> " << program_key << " --- ";
+#endif
 
   programs_[program_key] = std::move(program);
 
@@ -55,24 +56,33 @@ cl::Program &CLContext::GetProgram(const std::string &file_name,
 
 void CLContext::AddKernel(const std::string &kernel_name,
                           const std::string &file_name,
-                          const std::string &options) {
+                          const std::string &options,
+                          const std::string &time_stamp) {
   cl_int status{CL_SUCCESS};
+#ifdef LITE_WITH_LOG
   VLOG(3) << " --- to get program " << file_name << " --- ";
+#endif
   auto program = GetProgram(file_name, options);
+#ifdef LITE_WITH_LOG
   VLOG(3) << " --- end get program --- ";
   VLOG(3) << " --- to create kernel: " << kernel_name << " --- ";
-  std::unique_ptr<cl::Kernel> kernel(
+#endif
+  std::shared_ptr<cl::Kernel> kernel(
       new cl::Kernel(program, kernel_name.c_str(), &status));
   CL_CHECK_FATAL(status);
+#ifdef LITE_WITH_LOG
   VLOG(3) << " --- end create kernel --- ";
+#endif
   kernels_.emplace_back(std::move(kernel));
   STL::stringstream kernel_key;
-  kernel_key << kernel_name << options;
+  kernel_key << kernel_name << options << time_stamp;
   kernel_offset_[kernel_key.str()] = kernels_.size() - 1;
 }
 
 cl::Kernel &CLContext::GetKernel(const int index) {
+#ifdef LITE_WITH_LOG
   VLOG(3) << " --- kernel count: " << kernels_.size() << " --- ";
+#endif
   CHECK(static_cast<size_t>(index) < kernels_.size())
       << "The index must be less than the size of kernels.";
   CHECK(kernels_[index] != nullptr)
@@ -87,7 +97,7 @@ cl::Kernel &CLContext::GetKernel(const std::string &name) {
   return GetKernel(it->second);
 }
 
-cl::NDRange CLContext::DefaultWorkSize(const CLImage &image) {
+cl::NDRange CLContext::DefaultGlobalWorkSize(const CLImage &image) {
   // n c h w
   auto image_dim = image.tensor_dims();
   if (image_dim.size() == 4) {
@@ -120,6 +130,91 @@ cl::NDRange CLContext::DefaultWorkSize(const CLImage &image) {
     LOG(FATAL) << "Not support this dimension, need to be implemented!";
     return cl::NDRange{};
   }
+}
+
+std::vector<cl::NDRange> CLContext::GenerateLocalWorkSizes(
+    cl::NDRange global_work_size, size_t max_work_size) {
+  size_t generate_lws_type = CLRuntime::Global()->auto_tune();
+
+  cl::NDRange tmp_lws = DefaultLocalWorkSize(
+      global_work_size, max_work_size, /*divisor=*/2, /*tune_reverse=*/false);
+  cl::NDRange last_lws = cl::NDRange{
+      static_cast<size_t>(0), static_cast<size_t>(0), static_cast<size_t>(0)};
+
+  std::vector<cl::NDRange> lwss{tmp_lws};
+  // 0 - None, 1 - Rapid, 2 - Normal, 3 - Exhaustive
+  if (generate_lws_type == 0) {
+    // 0 - None: nothing to do
+  } else if (generate_lws_type == 1 || generate_lws_type == 2 ||
+             generate_lws_type == 3) {
+    for (auto tune_reverse : {true, false}) {
+      for (size_t divisor = 1; divisor < /*max_divisor=*/15; divisor++) {
+        tmp_lws = DefaultLocalWorkSize(
+            global_work_size, max_work_size, divisor, tune_reverse);
+        if (last_lws[0] == tmp_lws[0] && last_lws[1] == tmp_lws[1] &&
+            last_lws[2] == tmp_lws[2]) {
+          // skip tuned lws
+          continue;
+        }
+        lwss.emplace_back(tmp_lws);
+      }
+    }
+  } else {
+    // todo
+    LOG(FATAL) << "Unsupported opencl tune type:" << generate_lws_type;
+  }
+
+  return lwss;
+}
+
+cl::NDRange CLContext::DefaultLocalWorkSize(
+    cl::NDRange global_work_size,
+    size_t max_work_size,
+    int divisor /*=2*/,
+    bool tune_reverse /*=false*/,
+    size_t user_defined_max_work_size /*=0*/) {
+  int preferred_lws = 0;
+  int gws0 = global_work_size[0];
+  int gws1 = global_work_size[1];
+  int gws2 = global_work_size[2];
+
+  if (tune_reverse) {
+    gws2 = global_work_size[0];
+    gws1 = global_work_size[1];
+    gws0 = global_work_size[2];
+  }
+
+  if (divisor > 1) {
+    max_work_size /= divisor;
+  }
+  if (user_defined_max_work_size > 0 &&
+      user_defined_max_work_size <= max_work_size) {
+    max_work_size = user_defined_max_work_size;
+  }
+
+  while (gws1 > max_work_size && max_work_size > 0) {
+    gws1 = gws1 % 2 == 0 ? gws1 / 2 : 1;
+  }
+  while (gws2 * gws1 > max_work_size && max_work_size > 0) {
+    gws2 = gws2 % 2 == 0 ? gws2 / 2 : 1;
+  }
+  while (gws0 * gws1 * gws2 > max_work_size && max_work_size > 0) {
+    gws0 = gws0 % 2 == 0 ? gws0 / 2 : 1;
+  }
+
+  if (tune_reverse) {
+    return cl::NDRange{static_cast<size_t>(gws2),
+                       static_cast<size_t>(gws1),
+                       static_cast<size_t>(gws0)};
+  } else {
+    return cl::NDRange{static_cast<size_t>(gws0),
+                       static_cast<size_t>(gws1),
+                       static_cast<size_t>(gws2)};
+  }
+}
+
+bool CLContext::IsArmMali() {
+  return CLRuntime::Global()->GetGpuType() == GpuType::ARM_MALI;
 }
 
 }  // namespace lite

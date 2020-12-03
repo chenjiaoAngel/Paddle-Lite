@@ -15,10 +15,17 @@
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 #include "lite/core/context.h"
+<<<<<<< HEAD
 #include "lite/operators/op_params.h"
 #include "lite/tests/utils/naive_math_impl.h"
 #include "lite/tests/utils/tensor_utils.h"
 #include "lite/tests/utils/timer.h"
+=======
+#include "lite/core/profile/timer.h"
+#include "lite/operators/op_params.h"
+#include "lite/tests/utils/naive_math_impl.h"
+#include "lite/tests/utils/tensor_utils.h"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
 #ifdef LITE_WITH_ARM
 #include "lite/kernels/arm/pool_compute.h"
@@ -60,7 +67,11 @@ DEFINE_string(pooling_type, "max", "do max pooling");
 typedef paddle::lite::DDim DDim;
 typedef paddle::lite::Tensor Tensor;
 typedef paddle::lite::operators::PoolParam PoolParam;
+<<<<<<< HEAD
 using paddle::lite::Timer;
+=======
+using paddle::lite::profile::Timer;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
 DDim compute_out_dim(const DDim& dim_in,
                      const paddle::lite::operators::PoolParam& param) {
@@ -69,8 +80,12 @@ DDim compute_out_dim(const DDim& dim_in,
   auto kernel_w = param.ksize[1];
   auto h = dim_in[2];
   auto w = dim_in[3];
+<<<<<<< HEAD
   int pad_h = param.paddings[0];
   int pad_w = param.paddings[1];
+=======
+  auto paddings = *param.paddings;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   int stride_h = param.strides[0];
   int stride_w = param.strides[1];
   bool ceil_mode = param.ceil_mode;
@@ -79,11 +94,23 @@ DDim compute_out_dim(const DDim& dim_in,
   int wout = 1;
   if (!flag_global) {
     if (!ceil_mode) {
+<<<<<<< HEAD
       hout = (h - kernel_h + 2 * pad_h) / stride_h + 1;
       wout = (w - kernel_w + 2 * pad_w) / stride_w + 1;
     } else {
       hout = (h - kernel_h + 2 * pad_h + stride_h - 1) / stride_h + 1;
       wout = (w - kernel_w + 2 * pad_w + stride_w - 1) / stride_w + 1;
+=======
+      hout = (h - kernel_h + paddings[0] + paddings[1]) / stride_h + 1;
+      wout = (w - kernel_w + paddings[2] + paddings[3]) / stride_w + 1;
+    } else {
+      hout =
+          (h - kernel_h + paddings[0] + paddings[1] + stride_h - 1) / stride_h +
+          1;
+      wout =
+          (w - kernel_w + paddings[2] + paddings[3] + stride_w - 1) / stride_w +
+          1;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
     }
   }
   dim_out[2] = hout;
@@ -116,7 +143,11 @@ void pooling_basic(const float* din,
   int stride_h = strides[0];
   int stride_w = strides[1];
   int pad_h = paddings[0];
+<<<<<<< HEAD
   int pad_w = paddings[1];
+=======
+  int pad_w = paddings[2];
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   int size_channel_in = win * hin;
   int size_channel_out = wout * hout;
   if (global_pooling) {
@@ -124,7 +155,13 @@ void pooling_basic(const float* din,
       for (int n = 0; n < num; ++n) {
         float* dout_batch = dout + n * chout * size_channel_out;
         const float* din_batch = din + n * chin * size_channel_in;
+<<<<<<< HEAD
 #pragma omp parallel for
+=======
+#ifdef PADDLE_WITH_MKLML
+#pragma omp parallel for
+#endif
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
         for (int c = 0; c < chout; ++c) {
           const float* din_ch = din_batch + c * size_channel_in;  // in address
           float tmp1 = din_ch[0];
@@ -141,7 +178,13 @@ void pooling_basic(const float* din,
       for (int n = 0; n < num; ++n) {
         float* dout_batch = dout + n * chout * size_channel_out;
         const float* din_batch = din + n * chin * size_channel_in;
+<<<<<<< HEAD
 #pragma omp parallel for
+=======
+#ifdef PADDLE_WITH_MKLML
+#pragma omp parallel for
+#endif
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
         for (int c = 0; c < chout; ++c) {
           const float* din_ch = din_batch + c * size_channel_in;  // in address
           float sum = 0.f;
@@ -156,6 +199,12 @@ void pooling_basic(const float* din,
     }
   } else {
     for (int ind_n = 0; ind_n < num; ++ind_n) {
+<<<<<<< HEAD
+=======
+#ifdef PADDLE_WITH_MKLML
+#pragma omp parallel for
+#endif
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       for (int ind_c = 0; ind_c < chin; ++ind_c) {
         for (int ind_h = 0; ind_h < hout; ++ind_h) {
           int sh = ind_h * stride_h;
@@ -194,18 +243,36 @@ void pooling_basic(const float* din,
                 int bh = kernel_h;
                 int bw = kernel_w;
                 if (ew == win) {
+<<<<<<< HEAD
                   bw = sw + kernel_w >= win + pad_w ? win + pad_w
                                                     : sw + kernel_w;
                   bw -= sw;
                   if (sw - pad_w < 0 && sw + kernel_w > win + pad_w) {
+=======
+                  bw = (sw + kernel_w) >= (win + paddings[3])
+                           ? (win + paddings[3])
+                           : (sw + kernel_w);
+                  bw -= sw;
+                  if ((sw - pad_w) < 0 &&
+                      (sw + kernel_w) > (win + paddings[3])) {
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
                     bw += pad_w;
                   }
                 }
                 if (eh == hin) {
+<<<<<<< HEAD
                   bh = sh + kernel_h >= hin + pad_h ? hin + pad_h
                                                     : sh + kernel_h;
                   bh -= sh;
                   if (sh - pad_h < 0 && sh + kernel_h > hin + pad_h) {
+=======
+                  bh = (sh + kernel_h) >= (hin + paddings[1])
+                           ? (hin + paddings[1])
+                           : (sh + kernel_h);
+                  bh -= sh;
+                  if ((sh - pad_h) < 0 &&
+                      (sh + kernel_h) > (hin + paddings[1])) {
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
                     bh += pad_h;
                   }
                 }
@@ -219,6 +286,10 @@ void pooling_basic(const float* din,
     }
   }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 #ifdef LITE_WITH_ARM
 void test_pool_fp32(const std::vector<DDim>& input_dims,
                     const std::vector<int>& ksize,
@@ -241,7 +312,11 @@ void test_pool_fp32(const std::vector<DDim>& input_dims,
   param.ksize = ksize;
 
   param.strides = strides;
+<<<<<<< HEAD
   param.paddings = pads;
+=======
+  param.paddings = std::make_shared<std::vector<int>>(pads);
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   param.ceil_mode = ceil_mode;
   param.global_pooling = flag_global;
   param.pooling_type = pooling_type;
@@ -311,18 +386,32 @@ void test_pool_fp32(const std::vector<DDim>& input_dims,
         /// compute
         Timer t0;
         for (int i = 0; i < FLAGS_repeats; ++i) {
+<<<<<<< HEAD
           t0.start();
           pool.Launch();
           t0.end();
+=======
+          t0.Start();
+          pool.Launch();
+          t0.Stop();
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
         }
 
         double gops = 2.0 * dim_out.production() * ksize[0] * ksize[1];
         LOG(INFO) << "pool fp32: input shape: " << dim_in << ", output shape"
+<<<<<<< HEAD
                   << dim_out << ", running time, avg: " << t0.get_average_ms()
                   << ", min time: " << t0.get_min_time()
                   << ", total GOPS: " << 1e-9 * gops
                   << " GOPS, avg GOPs: " << 1e-6 * gops / t0.get_average_ms()
                   << " GOPs, max GOPs: " << 1e-6 * gops / t0.get_min_time();
+=======
+                  << dim_out << ", running time, avg: " << t0.LapTimes().Avg()
+                  << ", min time: " << t0.LapTimes().Min()
+                  << ", total GOPS: " << 1e-9 * gops
+                  << " GOPS, avg GOPs: " << 1e-6 * gops / t0.LapTimes().Avg()
+                  << " GOPs, max GOPs: " << 1e-6 * gops / t0.LapTimes().Min();
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
         if (FLAGS_check_result) {
           double max_ratio = 0;
@@ -346,7 +435,12 @@ void test_pool_fp32(const std::vector<DDim>& input_dims,
               LOG(FATAL) << "test fp32 pool: input: " << dim_in
                          << ", output: " << dim_out
                          << ", kernel dim: " << ksize[0] << ", " << ksize[1]
+<<<<<<< HEAD
                          << ", pad: " << pads[0] << ", " << pads[1]
+=======
+                         << ", pad: " << pads[0] << ", " << pads[1] << ", "
+                         << pads[2] << ", " << pads[3]
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
                          << ", stride: " << strides[0] << ", " << strides[1]
                          << ", global_pooling: "
                          << (flag_global ? "global" : "false")
@@ -361,6 +455,10 @@ void test_pool_fp32(const std::vector<DDim>& input_dims,
         LOG(INFO) << "test fp32 pool: input: " << dim_in
                   << ", output: " << dim_out << ", kernel dim: " << ksize[0]
                   << ", " << ksize[1] << ", pad: " << pads[0] << ", " << pads[1]
+<<<<<<< HEAD
+=======
+                  << ", " << pads[2] << ", " << pads[3]
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
                   << ", stride: " << strides[0] << ", " << strides[1]
                   << ", global_pooling: " << (flag_global ? "global" : "false")
                   << ", pooling_type: " << pooling_type
@@ -377,7 +475,11 @@ void test_pool_fp32(const std::vector<DDim>& input_dims,
 }
 #else
 void test_pool_fp32(const std::vector<DDim>& input_dims,
+<<<<<<< HEAD
                     const std::vector<innt>& ksize,
+=======
+                    const std::vector<int>& ksize,
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
                     const std::vector<int>& strides,
                     const std::vector<int>& pads,
                     bool ceil_mode,
@@ -397,6 +499,7 @@ TEST(TestPoolRand, test_pool_rand) {
       for (auto& kw : {1, 2, 3}) {
         for (auto& kh : {1, 2, 3}) {
           for (auto& stride : {1, 2}) {
+<<<<<<< HEAD
             for (auto& pad : {0, 1, 2}) {
               for (auto& flag_global : {false, true}) {
                 for (auto& exclusive : {false, true}) {
@@ -422,6 +525,40 @@ TEST(TestPoolRand, test_pool_rand) {
                                      pooling_type,
                                      {1, 2, 4},
                                      {FLAGS_power_mode});
+=======
+            for (auto& pad_top : {0, 1, 2}) {
+              for (auto& pad_bottom : {0, 1, 2}) {
+                for (auto& pad_left : {0, 1, 2}) {
+                  for (auto& pad_right : {0, 1, 2}) {
+                    for (auto& flag_global : {false, true}) {
+                      for (auto& exclusive : {false, true}) {
+                        for (auto& ceil_mode : {false, true}) {
+                          for (auto& pooling_type : {"max", "avg"}) {
+                            bool adaptive = false;
+                            bool use_quantizer = false;
+                            std::vector<DDim> dims;
+                            for (auto& batch : {1, 2}) {
+                              for (auto& h : {1, 2, 3, 4, 11, 19, 32, 28}) {
+                                dims.push_back(DDim({batch, cin, h, h}));
+                              }
+                            }
+                            test_pool_fp32(
+                                dims,
+                                {kh, kw},
+                                {stride, stride},
+                                {pad_top, pad_bottom, pad_left, pad_right},
+                                ceil_mode,
+                                flag_global,
+                                exclusive,
+                                adaptive,
+                                use_quantizer,
+                                pooling_type,
+                                {4},
+                                {FLAGS_power_mode});
+                          }
+                        }
+                      }
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
                     }
                   }
                 }
@@ -441,7 +578,11 @@ TEST(TesPoolCustom, test_pool_fp32_custom_size) {
       {DDim({FLAGS_batch, FLAGS_in_channel, FLAGS_in_height, FLAGS_in_width})},
       {FLAGS_kernel_h, FLAGS_kernel_w},
       {FLAGS_stride_h, FLAGS_stride_w},
+<<<<<<< HEAD
       {FLAGS_pad_h, FLAGS_pad_w},
+=======
+      {FLAGS_pad_h, FLAGS_pad_h, FLAGS_pad_w, FLAGS_pad_w},
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       FLAGS_ceil_mode,
       FLAGS_flag_global,
       FLAGS_exclusive,

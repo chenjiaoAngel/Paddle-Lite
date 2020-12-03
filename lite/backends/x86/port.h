@@ -14,15 +14,15 @@
 
 #pragma once
 
+#include <time.h>
 #include <cstdio>
 #include <stdexcept>
 
-#include <time.h>
 #include <memory>
 #include <string>
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES  // msvc conflict logging with windows.h
-#include "glog/logging.h"
+#include "lite/utils/cp_logging.h"
 
 #if !defined(_WIN32)
 #include <dlfcn.h>     //  dladdr
@@ -37,7 +37,9 @@
 #define GOOGLE_GLOG_DLL_DECL
 #include <io.h>  // _popen, _pclose
 #include <stdio.h>
+#define NOMINMAX  // msvc max/min macro conflict with std::min/max
 #include <windows.h>
+#include <winsock.h>
 #include <numeric>  // std::accumulate in msvc
 #ifndef S_ISDIR     // windows port for sys/stat.h
 #define S_ISDIR(mode) (((mode)&S_IFMT) == S_IFDIR)
@@ -62,6 +64,8 @@ static void *dlopen(const char *filename, int flag) {
   return reinterpret_cast<void *>(hModule);
 }
 
+#ifdef LITE_WITH_LOG
+extern struct timeval;
 static int gettimeofday(struct timeval *tp, void *tzp) {
   time_t clock;
   struct tm tm;
@@ -81,6 +85,7 @@ static int gettimeofday(struct timeval *tp, void *tzp) {
 
   return (0);
 }
+#endif  // LITE_WITH_LOG
 #endif  // !_WIN32
 
 static void ExecShellCommand(const std::string &cmd, std::string *message) {

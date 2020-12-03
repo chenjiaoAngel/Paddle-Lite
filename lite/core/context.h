@@ -16,20 +16,20 @@
 
 #include "lite/utils/any.h"
 #ifdef LITE_WITH_CUDA
-#include "lite/backends/cuda/blas.h"
-#include "lite/backends/cuda/cuda_utils.h"
+#include "lite/backends/cuda/context.h"
 #endif
 #ifdef LITE_WITH_OPENCL
-#include <gflags/gflags.h>
-#include <unordered_map>
 #include "lite/backends/opencl/cl_context.h"
 #include "lite/backends/opencl/cl_runtime.h"
 #endif
-#ifdef LITE_WITH_NPU
-#include "lite/backends/npu/runtime.h"
+#ifdef LITE_WITH_MLU
+#include <cnml.h>
+#include <cnrt.h>
+#include <mutex>  // NOLINT
+#include "lite/backends/mlu/mlu_utils.h"
 #endif
 #ifdef LITE_WITH_XPU
-#include "lite/backends/xpu/runtime.h"
+#include "lite/backends/xpu/xpu_header_sitter.h"
 #endif
 
 #include <map>
@@ -39,13 +39,12 @@
 #include <utility>
 #include <vector>
 #include "lite/core/device_info.h"
+#include "lite/core/scope.h"
 #include "lite/core/target_wrapper.h"
 #include "lite/core/tensor.h"
 #include "lite/utils/all.h"
-
-#ifdef LITE_WITH_OPENCL
-DECLARE_string(cl_path);
-#endif
+#include "lite/utils/env.h"
+#include "lite/utils/macros.h"
 
 namespace paddle {
 namespace lite {
@@ -55,12 +54,17 @@ class Context;
 
 using HostContext = Context<TargetType::kHost>;
 using X86Context = Context<TargetType::kX86>;
-using CUDAContext = Context<TargetType::kCUDA>;
 using ARMContext = Context<TargetType::kARM>;
 using NPUContext = Context<TargetType::kNPU>;
+using APUContext = Context<TargetType::kAPU>;
 using XPUContext = Context<TargetType::kXPU>;
 using OpenCLContext = Context<TargetType::kOpenCL>;
 using FPGAContext = Context<TargetType::kFPGA>;
+using BMContext = Context<TargetType::kBM>;
+using MLUContext = Context<TargetType::kMLU>;
+using RKNPUContext = Context<TargetType::kRKNPU>;
+using HuaweiAscendNPUContext = Context<TargetType::kHuaweiAscendNPU>;
+using ImaginationNNAContext = Context<TargetType::kImaginationNNA>;
 
 template <>
 class Context<TargetType::kHost> {
@@ -77,14 +81,124 @@ class Context<TargetType::kHost> {
 template <>
 class Context<TargetType::kNPU> {
  public:
-  Context() {}
-  explicit Context(const NPUContext& ctx);
   // NOTE: InitOnce should only be used by ContextScheduler
   void InitOnce() {}
   void CopySharedTo(NPUContext* ctx) {}
 
   NPUContext& operator=(const NPUContext& ctx) {}
   std::string name() const { return "NPUContext"; }
+
+  static void SetSubgraphModelCacheDir(Scope* scope,
+                                       std::string subgraph_model_cache_dir) {
+    auto var = scope->Var("SUBGRAPH_MODEL_CACHE_DIR");
+    CHECK(var);
+    auto data = var->GetMutable<std::string>();
+    CHECK(data);
+    *data = subgraph_model_cache_dir;
+  }
+  static std::string SubgraphModelCacheDir(Scope* scope) {
+    auto var = scope->FindVar("SUBGRAPH_MODEL_CACHE_DIR");
+    if (!var) return "";
+    return var->Get<std::string>();
+  }
+};
+#endif
+
+#ifdef LITE_WITH_HUAWEI_ASCEND_NPU
+template <>
+class Context<TargetType::kHuaweiAscendNPU> {
+ public:
+  // NOTE: InitOnce should only be used by ContextScheduler
+  void InitOnce() {}
+  void CopySharedTo(HuaweiAscendNPUContext* ctx) {}
+
+  HuaweiAscendNPUContext& operator=(const HuaweiAscendNPUContext& ctx) {
+    return *this;
+  }
+  std::string name() const { return "HuaweiAscendNPUContext"; }
+
+  static void SetSubgraphModelCacheDir(std::string subgraph_model_cache_dir) {
+    subgraph_model_cache_dir_ = subgraph_model_cache_dir;
+  }
+  static std::string SubgraphModelCacheDir() {
+    return subgraph_model_cache_dir_;
+  }
+
+  static void SetHuaweiAscendDeviceID(int huawei_ascend_device_id) {
+    huawei_ascend_device_id_ = huawei_ascend_device_id;
+  }
+  static int HuaweiAscendDeviceID() { return huawei_ascend_device_id_; }
+
+ private:
+  static LITE_THREAD_LOCAL std::string subgraph_model_cache_dir_;
+  static LITE_THREAD_LOCAL int huawei_ascend_device_id_;
+};
+#endif
+
+#ifdef LITE_WITH_APU
+template <>
+class Context<TargetType::kAPU> {
+ public:
+  // NOTE: InitOnce should only be used by ContextScheduler
+  void InitOnce() {}
+  void CopySharedTo(APUContext* ctx) {}
+
+  APUContext& operator=(const APUContext& ctx) {}
+  std::string name() const { return "APUContext"; }
+
+  static void SetSubgraphModelCacheDir(Scope* scope,
+                                       std::string subgraph_model_cache_dir) {
+    auto var = scope->Var("SUBGRAPH_MODEL_CACHE_DIR");
+    CHECK(var);
+    auto data = var->GetMutable<std::string>();
+    CHECK(data);
+    *data = subgraph_model_cache_dir;
+  }
+
+  static std::string SubgraphModelCacheDir(Scope* scope) {
+    auto var = scope->FindVar("SUBGRAPH_MODEL_CACHE_DIR");
+    if (!var) return "";
+    return var->Get<std::string>();
+  }
+};
+#endif
+
+#ifdef LITE_WITH_BM
+template <>
+class Context<TargetType::kBM> {
+ public:
+  // NOTE: InitOnce should only be used by ContextScheduler
+  void InitOnce() { TargetWrapperBM::SetDevice(TargetWrapperBM::GetDevice()); }
+  void CopySharedTo(BMContext* ctx) {}
+  void* GetHandle() { return TargetWrapperBM::GetHandle(); }
+
+  std::string name() const { return "BMContext"; }
+};
+#endif
+
+#ifdef LITE_WITH_RKNPU
+template <>
+class Context<TargetType::kRKNPU> {
+ public:
+  // NOTE: InitOnce should only be used by ContextScheduler
+  void InitOnce() {}
+  void CopySharedTo(RKNPUContext* ctx) {}
+
+  RKNPUContext& operator=(const RKNPUContext& ctx) {}
+  std::string name() const { return "RKNPUContext"; }
+};
+#endif
+
+#ifdef LITE_WITH_IMAGINATION_NNA
+template <>
+class Context<TargetType::kImaginationNNA> {
+ public:
+  Context() {}
+  // NOTE: InitOnce should only be used by ContextScheduler
+  void InitOnce() {}
+  void CopySharedTo(ImaginationNNAContext* ctx) {}
+
+  std::string name() const { return "ImaginationNNAContext"; }
 };
 #endif
 
@@ -92,11 +206,15 @@ class Context<TargetType::kNPU> {
 template <>
 class Context<TargetType::kXPU> {
  public:
-  Context() {}
-  explicit Context(const NPUContext& ctx);
   // NOTE: InitOnce should only be used by ContextScheduler
   void InitOnce() {}
+
   void CopySharedTo(XPUContext* ctx) {}
+
+  // TODO(miaotianxiang): remove this
+  static xdnn::Context* GetRawContext() {
+    return TargetWrapperXPU::GetRawContext();
+  }
 
   std::string name() const { return "XPUContext"; }
 };
@@ -106,11 +224,6 @@ class Context<TargetType::kXPU> {
 template <>
 class Context<TargetType::kARM> {
  public:
-  Context() {}
-  explicit Context(const ARMContext& ctx);
-
-  ARMContext& operator=(const ARMContext& ctx) {}
-
   // NOTE: InitOnce should only be used by ContextScheduler
   void InitOnce() { DeviceInfo::Init(); }
 
@@ -133,6 +246,7 @@ class Context<TargetType::kARM> {
   int llc_size() const { return DeviceInfo::Global().llc_size(); }
   bool has_dot() const { return DeviceInfo::Global().has_dot(); }
   bool has_fp16() const { return DeviceInfo::Global().has_fp16(); }
+  bool has_a53_valid() const { return DeviceInfo::Global().set_a53_valid(); }
 
   template <typename T>
   T* workspace_data() {
@@ -152,7 +266,6 @@ class Context<TargetType::kARM> {
 template <>
 class Context<TargetType::kFPGA> {
  public:
-  Context() {}
   void InitOnce() {}
 
   FPGAContext& operator=(const FPGAContext& ctx) {}
@@ -163,18 +276,20 @@ class Context<TargetType::kFPGA> {
 };
 #endif
 
-#ifdef LITE_WITH_CUDA
-// Only works with CUDA kernels.
+#ifdef LITE_WITH_MLU
 template <>
-class Context<TargetType::kCUDA> {
+class Context<TargetType::kMLU> {
  public:
-  typename Env<TargetType::kCUDA>::Devs& devs =
-      Env<TargetType::kCUDA>::Global();
-  // NOTE: InitOnce should only be used by ContextScheduler
-  void InitOnce() {
-    cublas_fp32_ = std::make_shared<lite::cuda::Blas<float>>();
+  typename Env<TargetType::kMLU>::Devs& devs = Env<TargetType::kMLU>::Global();
+
+  void InitOnce() {}
+
+  MLUContext& operator=(const MLUContext& ctx) {
+    this->Init(ctx.device_id_, ctx.exec_queue_id_);
+    return *this;
   }
-  void Init(int dev_id, int exec_stream_id = 0, int io_stream_id = 0) {
+
+  void Init(int dev_id, int exec_queue_id = 0) {
     CHECK_GT(devs.size(), 0UL)
         << "Env is not initialized or current target is not exit!";
     if (dev_id >= static_cast<int>(devs.size())) {
@@ -184,77 +299,68 @@ class Context<TargetType::kCUDA> {
     } else {
       device_id_ = dev_id;
     }
-    if (io_stream_id >= devs[dev_id].max_stream()) {
-      LOG(WARNING) << "data stream index exceeds the maximum stream number, "
-                      "set to default stream(0)!";
-      io_stream_id = 0;
+    SetMluDevice(device_id_);
+
+    // get queue id from map
+    std::unique_lock<std::mutex> lk(map_mutex_);
+    if (queue_id_map_.find(exec_queue_id) == queue_id_map_.end()) {
+      queue_id_map_[exec_queue_id] =
+          next_queue_id_++ % devs[dev_id].max_queue();
     }
-    if (exec_stream_id >= devs[dev_id].max_stream()) {
-      LOG(WARNING) << "exec stream index exceeds the maximum stream number, "
-                      "set to default stream(0)!";
-      exec_stream_id = 0;
-    }
+    exec_queue_id_ = queue_id_map_[exec_queue_id];
+    VLOG(4) << "pick mlu queue id: " << exec_queue_id_;
+    lk.unlock();
 
-    exec_stream_ = devs[dev_id].exec_streams()[exec_stream_id];
-    io_stream_ = devs[dev_id].io_streams()[io_stream_id];
-
-    exec_stream_id_ = exec_stream_id;
-    io_stream_id_ = io_stream_id;
-  }
-  void CopySharedTo(CUDAContext* ctx) {
-    CHECK(ctx);
-    CHECK(cublas_fp32_) << "cublas_fp32 should be set first";
-    ctx->cublas_fp32_ = cublas_fp32_;
+    io_queue_ = devs[dev_id].io_queues()[exec_queue_id_];
+    exec_queue_ = devs[dev_id].exec_queues()[exec_queue_id_];
   }
 
-  const cudaStream_t& exec_stream() const { return exec_stream_; }
-  void SetExecStream(cudaStream_t stream) { exec_stream_ = stream; }
+  void CopySharedTo(MLUContext* ctx) { ctx->forward_param_ = forward_param_; }
 
-  const cudaStream_t& io_stream() const { return io_stream_; }
-  void SetIoStream(cudaStream_t stream) { io_stream_ = stream; }
+  const cnrtQueue_t& exec_queue() const { return exec_queue_; }
+  void SetExecQueue(cnrtQueue_t queue) { exec_queue_ = queue; }
 
-  std::shared_ptr<cuda::Blas<float>> cublas_fp32() { return cublas_fp32_; }
-  void SetCuBlasFP32(std::shared_ptr<cuda::Blas<float>> cublas_fp32) {
-    cublas_fp32_ = cublas_fp32;
+  const cnrtQueue_t& io_queue() const { return io_queue_; }
+  void SetIoQueue(cnrtQueue_t queue) { io_queue_ = queue; }
+
+  cnmlCoreVersion_t MLUCoreVersion() {
+    return paddle::lite::TargetWrapperMlu::MLUCoreVersion();
   }
 
-  const std::vector<cudaEvent_t>& input_events() { return input_events_; }
-  void SetInputEvents(const std::vector<cudaEvent_t>& input_events) {
-    input_events_.clear();
-    input_events_.assign(input_events.begin(), input_events.end());
+  int MLUCoreNumber() {
+    return paddle::lite::TargetWrapperMlu::MLUCoreNumber();
   }
 
-  const std::vector<cudaEvent_t>& output_events() { return output_events_; }
-  void SetOutputEvents(const std::vector<cudaEvent_t>& output_events) {
-    output_events_.clear();
-    output_events_.assign(output_events.begin(), output_events.end());
-  }
+  u32_t affinity() { return affinity_; }
 
-  std::string name() const { return "CUDAContext"; }
+  cnrtInvokeFuncParam_t forward_param() { return forward_param_; }
+
+  int device_id() { return device_id_; }
+
+  std::string name() const { return "MLUContext"; }
 
  private:
+  static int next_queue_id_;
+  static std::map<int, int> queue_id_map_;
+  static std::mutex map_mutex_;
   int device_id_;
   // overall information
-  int exec_stream_id_;
-  int io_stream_id_;
-  cudaStream_t exec_stream_;
-  cudaStream_t io_stream_;
+  int exec_queue_id_;
+  cnrtQueue_t io_queue_;
+  cnrtQueue_t exec_queue_;
 
-  // not thread-safe, should allocate for each thread.
-  std::shared_ptr<cuda::Blas<float>> cublas_fp32_;
+  std::vector<cnrtNotifier_t> input_notifiers_;
+  std::vector<cnrtNotifier_t> output_notifiers_;
 
-  // kernel information
-  std::vector<cudaEvent_t> input_events_;
-  std::vector<cudaEvent_t> output_events_;
+  cnrtInvokeFuncParam_t forward_param_;
+  u32_t affinity_ = 0x01;
 };
-#endif
+#endif  // LITE_WITH_MLU
 
 #ifdef LITE_WITH_X86
 template <>
 class Context<TargetType::kX86> {
  public:
-  Context() {}
-
   // NOTE: InitOnce should only be used by ContextScheduler
   void InitOnce() {}
 
@@ -272,28 +378,23 @@ class Context<TargetType::kX86> {
 #ifdef LITE_WITH_OPENCL
 template <>
 class Context<TargetType::kOpenCL> {
-  std::shared_ptr<CLContext> cl_context_;
-  using WaitListType =
-      std::unordered_map<decltype(static_cast<const void*>(nullptr)),
-                         std::shared_ptr<cl::Event>>;
-  std::shared_ptr<WaitListType> cl_wait_list_;
+  std::shared_ptr<CLContext> cl_context_{nullptr};
 
  public:
   CLContext* cl_context() { return cl_context_.get(); }
-  WaitListType* cl_wait_list() { return cl_wait_list_.get(); }
 
   void InitOnce() {
-    // Init cl runtime.
-    CHECK(CLRuntime::Global()->IsInitSuccess()) << "OpenCL runtime init failed";
-    CLRuntime::Global()->set_cl_path(FLAGS_cl_path);
-
+    if (CLRuntime::Global()->IsInitSuccess() == false) {
+      // gpu is not support , can use cpu instead . do not fatal..
+      LOG(ERROR) << "OpenCL runtime init failed";
+    }
     cl_context_ = std::make_shared<CLContext>();
-    cl_wait_list_ = std::make_shared<WaitListType>();
   }
 
   void CopySharedTo(OpenCLContext* ctx) {
-    ctx->cl_context_ = cl_context_;
-    ctx->cl_wait_list_ = cl_wait_list_;
+    if (ctx && cl_context_) {
+      ctx->cl_context_ = cl_context_;
+    }
   }
 };
 #endif
@@ -322,7 +423,9 @@ class ContextScheduler {
     return *x;
   }
 
-  std::unique_ptr<KernelContext> NewContext(TargetType target) {
+  std::unique_ptr<KernelContext> NewContext(
+      TargetType target,
+      /*only used for cuda context*/ int exec_stream_id = 0) {
     std::unique_ptr<KernelContext> ctx(new KernelContext);
     switch (target) {
       case TARGET(kHost):
@@ -339,7 +442,7 @@ class ContextScheduler {
       case TARGET(kCUDA): {
         int dev_id = TargetWrapper<TargetType::kCUDA>::GetCurDevice();
         auto& context = ctx->As<CUDAContext>();
-        context.Init(dev_id);
+        context.Init(dev_id, exec_stream_id);
         kernel_contexts_[TargetType::kCUDA].As<CUDAContext>().CopySharedTo(
             &context);
       } break;
@@ -354,6 +457,25 @@ class ContextScheduler {
       case TARGET(kNPU):
         kernel_contexts_[TargetType::kNPU].As<NPUContext>().CopySharedTo(
             &ctx->As<NPUContext>());
+        break;
+#endif
+#ifdef LITE_WITH_HUAWEI_ASCEND_NPU
+      case TARGET(kHuaweiAscendNPU):
+        kernel_contexts_[TargetType::kHuaweiAscendNPU]
+            .As<HuaweiAscendNPUContext>()
+            .CopySharedTo(&ctx->As<HuaweiAscendNPUContext>());
+        break;
+#endif
+#ifdef LITE_WITH_APU
+      case TARGET(kAPU):
+        kernel_contexts_[TargetType::kAPU].As<APUContext>().CopySharedTo(
+            &ctx->As<APUContext>());
+        break;
+#endif
+#ifdef LITE_WITH_RKNPU
+      case TARGET(kRKNPU):
+        kernel_contexts_[TargetType::kRKNPU].As<RKNPUContext>().CopySharedTo(
+            &ctx->As<RKNPUContext>());
         break;
 #endif
 #ifdef LITE_WITH_XPU
@@ -374,8 +496,31 @@ class ContextScheduler {
             &ctx->As<FPGAContext>());
         break;
 #endif
+#ifdef LITE_WITH_BM
+      case TARGET(kBM):
+        kernel_contexts_[TargetType::kBM].As<BMContext>().CopySharedTo(
+            &ctx->As<BMContext>());
+        break;
+#endif
+#ifdef LITE_WITH_IMAGINATION_NNA
+      case TARGET(kImaginationNNA):
+        kernel_contexts_[TargetType::kImaginationNNA]
+            .As<ImaginationNNAContext>()
+            .CopySharedTo(&ctx->As<ImaginationNNAContext>());
+        break;
+#endif
+#ifdef LITE_WITH_MLU
+      case TARGET(kMLU): {
+        int dev_id = TargetWrapper<TargetType::kMLU>::GetCurDevice();
+        auto& context = ctx->As<MLUContext>();
+        context.Init(dev_id, exec_stream_id);
+        kernel_contexts_[TargetType::kMLU].As<MLUContext>().CopySharedTo(
+            &context);
+        LOG(INFO) << "New Context for MLU";
+      } break;
+#endif
       default:
-#ifndef LITE_ON_MODEL_OPTIMIZE_TOOL
+#if (!defined LITE_ON_MODEL_OPTIMIZE_TOOL) && (!defined LITE_WITH_PYTHON)
         LOG(FATAL) << "unsupported target " << TargetToStr(target);
 #endif
         break;
@@ -409,8 +554,26 @@ class ContextScheduler {
 #ifdef LITE_WITH_NPU
     InitContext<TargetType::kNPU, NPUContext>();
 #endif
+#ifdef LITE_WITH_HUAWEI_ASCEND_NPU
+    InitContext<TargetType::kHuaweiAscendNPU, HuaweiAscendNPUContext>();
+#endif
+#ifdef LITE_WITH_APU
+    InitContext<TargetType::kAPU, APUContext>();
+#endif
+#ifdef LITE_WITH_RKNPU
+    InitContext<TargetType::kRKNPU, RKNPUContext>();
+#endif
 #ifdef LITE_WITH_XPU
     InitContext<TargetType::kXPU, XPUContext>();
+#endif
+#ifdef LITE_WITH_BM
+    InitContext<TargetType::kBM, BMContext>();
+#endif
+#ifdef LITE_WITH_MLU
+    InitContext<TargetType::kMLU, MLUContext>();
+#endif
+#ifdef LITE_WITH_IMAGINATION_NNA
+    InitContext<TargetType::kImaginationNNA, ImaginationNNAContext>();
 #endif
   }
 

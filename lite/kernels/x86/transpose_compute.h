@@ -60,7 +60,7 @@ inline void TransCompute(const int dim,
       trans6(context, in, out, axis);
       break;
     default:
-      PADDLE_THROW("Tensors with rank at most 6 are supported");
+      LOG(FATAL) << "Tensors with rank at most 6 are supported";
   }
 }
 
@@ -73,7 +73,7 @@ class TransposeCompute : public KernelLite<TARGET(kX86), PRECISION(kFloat)> {
     auto& param = *param_.get_mutable<param_t>();
     auto* x = param.x;
     auto* out = param.output;
-    out->mutable_data<T>();
+    out->template mutable_data<T>();
     int ndims = param.axis.size();
     auto& context = ctx_->As<X86Context>();
     TransCompute<lite::TargetType::kX86, T>(
@@ -92,7 +92,7 @@ class Transpose2Compute : public KernelLite<TARGET(kX86), PRECISION(kFloat)> {
     auto& param = *param_.get_mutable<param_t>();
     auto* x = param.x;
     auto* out = param.output;
-    out->mutable_data<T>();
+    out->template mutable_data<T>();
     int ndims = param.axis.size();
     auto& context = ctx_->As<X86Context>();
     TransCompute<lite::TargetType::kX86, T>(

@@ -15,6 +15,7 @@
 #pragma once
 
 #include <cmath>
+#include <string>
 #include <vector>
 #include "lite/backends/arm/math/conv_impl.h"
 #include "lite/backends/arm/math/funcs.h"
@@ -33,59 +34,18 @@ class GemmLikeConv : public KernelLite<TARGET(kARM), Ptype> {
   GemmLikeConv() = default;
   ~GemmLikeConv() {}
 
-  virtual void ReInitWhenNeeded() {
-    auto& param = this->template Param<param_t>();
-    CHECK(this->ctx_);
-    auto& ctx = this->ctx_->template As<ARMContext>();
-    auto x_dims = param.x->dims();
-    auto w_dims = param.filter->dims();
-    auto o_dims = param.output->dims();
-    if (last_shape_ == x_dims) {
-      return;
-    }
-
-    int iw = x_dims[3];  // nchw
-    int ih = x_dims[2];
-    int ic = x_dims[1];
-    int ow = o_dims[3];
-    int oh = o_dims[2];
-    int oc = o_dims[1];
-    int kw = w_dims[3];
-    int kh = w_dims[2];
-    int sw = param.strides[1];
-    int sh = param.strides[0];
-    int pw = param.paddings[1];
-    int ph = param.paddings[0];
-    int dw = param.dilations[1];
-    int dh = param.dilations[0];
-
-    int m = oc / param.groups;
-    int k = ic * kh * kw / param.groups;
-    int n = oh * ow;
-
-    bool kps_equal = (pw == ph) && (sw == sh) && (kw == kh);
-    bool ks_equal = (sw == sh) && (kw == kh);
-    //! select conv gemmlike kernel
-    if (kw == 1 && sw == 1 && pw == 0 && kps_equal) {
-      //! 1x1s1p0 gemmlike conv
-      flag_1x1gemm_ = true;
-    } else {
-      //! im2col gemmlike conv
-      flag_1x1gemm_ = false;
-      ctx.ExtendWorkspace(k * n * sizeof(float));
-    }
-    if (!flag_trans_weights_ && n > 1) {
-      lite::arm::math::trans_gemm_weights<Ptype>(
-          *(param.filter), weights_, param.groups, &ctx);
-      flag_trans_weights_ = true;
-    } else if (n == 1) {
-      flag_trans_weights_ = false;
-    }
-    last_shape_ = x_dims;
-  }
-
+  virtual void ReInitWhenNeeded();
   virtual void PrepareForRun();
   virtual void Run();
+
+#ifdef LITE_WITH_PROFILE
+  virtual void SetProfileRuntimeKernelInfo(
+      paddle::lite::profile::OpCharacter* ch) {
+    ch->kernel_func_name = kernel_func_name_;
+  }
+
+  std::string kernel_func_name_{"NotImplForConvGemm"};
+#endif
 
   /// todo, support inplace weights transform
  protected:
@@ -97,6 +57,7 @@ class GemmLikeConv : public KernelLite<TARGET(kARM), Ptype> {
   bool flag_trans_bias_{false};
   Tensor weights_;
   Tensor bias_;
+  int workspace_size_{0};
 };
 
 }  // namespace arm

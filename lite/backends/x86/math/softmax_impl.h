@@ -99,7 +99,7 @@ class SoftmaxFunctor<Target, T, is_test, enable_if_CPU<Target>> {
                   const int axis_dim,
                   const lite::Tensor* X,
                   lite::Tensor* Y) {
-    auto in_dims = X->dims();
+    const auto& in_dims = X->dims();
     constexpr int kBatchDim = 0;
     constexpr int kClassDim = 1;
 
@@ -108,8 +108,8 @@ class SoftmaxFunctor<Target, T, is_test, enable_if_CPU<Target>> {
     const int num_remain = num_classes / axis_dim;
 
     if (num_remain == 1 && lite::x86::MayIUse(lite::x86::avx)) {
-      const T* in_data = X->data<T>();
-      auto* out_data = Y->mutable_data<T>();
+      const T* in_data = X->template data<T>();
+      auto* out_data = Y->template mutable_data<T>();
       for (int bs = 0; bs < batch_size; ++bs) {
         T max_val = *std::max_element(in_data, in_data + num_classes);
         max_val *= static_cast<T>(-1);
@@ -140,11 +140,12 @@ class SoftmaxFunctor<Target, float, true, enable_if_CPU<Target>> {
                   const int axis_dim,
                   const lite::Tensor* X,
                   lite::Tensor* Y) {
-    auto in_dims = X->dims();
+    const auto& in_dims = X->dims();
     const float* in_data = X->data<float>();
     float* out_data = Y->mutable_data<float>();
     const int kBatchDim = 0;
     const int kClassDim = 1;
+#ifdef PADDLE_WITH_MKLML
     // 2D data. Batch x C
     auto compute_softmax =
         lite::jit::KernelFuncs<lite::jit::SoftmaxTuple<float>,
@@ -155,6 +156,34 @@ class SoftmaxFunctor<Target, float, true, enable_if_CPU<Target>> {
                     in_dims[kClassDim],
                     in_dims[kBatchDim],
                     in_dims[kClassDim] / axis_dim);
+#else
+    const int batch_size = in_dims[kBatchDim];
+    const int length = in_dims[kClassDim];
+    const int stride = in_dims[kClassDim] / axis_dim;
+    for (int bs = 0; bs < batch_size; ++bs) {
+      // get max value of input data
+      float in_max = -FLT_MAX;
+      for (int i = 0; i < length; ++i) {
+        in_max = (std::max)(in_max, in_data[i]);
+      }
+      // y = exp(x - in_max)
+      for (int i = 0; i < length; ++i) {
+        out_data[i] = static_cast<float>(std::exp(in_data[i] - in_max));
+      }
+      // y = y / sum(y[i], y[i + stride], y[i + stride + stride] ...)
+      for (int i = 0; i < stride; ++i) {
+        float sum = 0.f;
+        for (int j = 0; j < axis_dim; ++j) {
+          sum += out_data[i + j * stride];
+        }
+        for (int j = 0; j < axis_dim; ++j) {
+          out_data[i + j * stride] /= sum;
+        }
+      }
+      in_data += length;
+      out_data += length;
+    }
+#endif
   }
 };
 
@@ -219,9 +248,9 @@ class SoftmaxGradFunctor<Target, T, enable_if_CPU<Target>> {
     const int num_remain = num_classes / axis_dim;
 
     if (num_remain == 1 && lite::x86::MayIUse(lite::x86::avx)) {
-      const T* out_data = y->data<T>();
-      const T* out_grad = y_grad->data<T>();
-      T* in_grad = x_grad->mutable_data<T>();
+      const T* out_data = y->template data<T>();
+      const T* out_grad = y_grad->template data<T>();
+      T* in_grad = x_grad->template mutable_data<T>();
       for (int bs = 0; bs < batch_size; ++bs) {
         T scalar;
         vec_mul_reduce<T, lite::x86::avx>(

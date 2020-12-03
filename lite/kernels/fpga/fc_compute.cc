@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include "lite/kernels/fpga/fc_compute.h"
+#include "lite/kernels/fpga/activation_compute.h"
+
+#include "lite/backends/fpga/KD/debugger.hpp"
 #include "lite/core/op_registry.h"
 #include "lite/core/type_system.h"
 
@@ -30,19 +33,27 @@ void FcCompute::PrepareForRun() {
   zynqmp::FullyConnectedParam& fc_param = pe_.param();
 
   param.output->mutable_data<float16>();
-
   fc_param.input = param.input->ZynqTensor();
   fc_param.output = param.output->ZynqTensor();
   fc_param.filter = param.w->ZynqTensor();
   fc_param.bias = param.bias->ZynqTensor();
+  fc_param.bias->flush();
+
+  if (activation_map.count(param.activation_type)) {
+    fc_param.activeParam.type = activation_map[param.activation_type];
+  }
 
   pe_.init();
   pe_.apply();
 }
 
 void FcCompute::Run() {
-  auto& param = this->Param<param_t>();
   pe_.dispatch();
+
+#ifdef FPGA_PRINT_TENSOR
+  zynqmp::FullyConnectedParam& fc_param = pe_.param();
+  Debugger::get_instance().registerOutput("fc", fc_param.output);
+#endif
 }
 
 }  // namespace fpga

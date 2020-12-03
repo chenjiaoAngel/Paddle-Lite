@@ -3,7 +3,7 @@
 # else()
 # endif()
 
-if(LITE_WITH_LIGHT_WEIGHT_FRAMEWORK OR LITE_ON_MODEL_OPTIMIZE_TOOL)
+if(LITE_WITH_LIGHT_WEIGHT_FRAMEWORK OR LITE_ON_MODEL_OPTIMIZE_TOOL OR (NOT LITE_WITH_LOG))
   lite_cc_library(logging SRCS logging.cc)
   set(utils_DEPS logging)
   lite_cc_test(test_logging SRCS logging_test.cc DEPS ${utils_DEPS})
@@ -12,6 +12,7 @@ else()
 endif()
 
 lite_cc_test(test_varient SRCS varient_test.cc DEPS utils)
+lite_cc_test(test_utils_string SRCS string_test.cc)
 lite_cc_library(any SRCS any.cc)
 
 if(LITE_ON_TINY_PUBLISH OR LITE_ON_MODEL_OPTIMIZE_TOOL)
@@ -26,3 +27,14 @@ else()
 endif()
 
 add_subdirectory(cv)
+<<<<<<< HEAD
+=======
+
+# fp16
+if (WITH_TESTING)
+    if (LITE_WITH_CUDA)
+      nv_test(float16_gpu_test SRCS float16_test.cu)
+    endif ()
+    lite_cc_test(float16_test SRCS float16_test.cc)
+endif()
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf

@@ -14,7 +14,10 @@
 
 #include "lite/core/mir/static_kernel_pick_pass.h"
 #include <algorithm>
+#include <list>
+#include <map>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 #include "lite/core/mir/graph_visualize_pass.h"
@@ -43,18 +46,40 @@ void StaticKernelPickPass::Apply(const std::unique_ptr<SSAGraph>& graph) {
     if (!node.IsStmt()) continue;
     auto& instruct = node.AsStmt();
 
+    std::map<std::string, PrecisionType> in_types;
+    std::map<std::string, PrecisionType> out_types;
+    // threse precision info store in __model__ file, if selected fp16 kernel,
+    // the output precision should be changed
+    for (std::list<Node*>::iterator i = node.inlinks.begin();
+         i != node.inlinks.end();
+         ++i) {
+      if ((*i)->arg()->type)
+        in_types[(*i)->arg()->name] = (*i)->arg()->type->precision();
+    }
+    for (std::list<Node*>::iterator i = node.outlinks.begin();
+         i != node.outlinks.end();
+         ++i) {
+      if ((*i)->arg()->type)
+        out_types[(*i)->arg()->name] = (*i)->arg()->type->precision();
+    }
     // Get candidate kernels
     std::vector<std::pair<float, std::unique_ptr<KernelBase>>> scored;
     CHECK(!instruct.kernels().empty()) << "No kernels found for "
                                        << instruct.op_type();
     VLOG(4) << "instruct.kernels().size():" << instruct.kernels().size();
     for (auto&& kernel : instruct.kernels()) {
-      float score = KernelGrade(*kernel, graph->valid_places());
+      float score = KernelGrade(instruct,
+                                *kernel,
+                                graph->valid_places(),
+                                in_types,
+                                out_types,
+                                instruct.op_info()->input_names(),
+                                instruct.op_info()->output_names());
       VLOG(4) << "kernel->summary():" << kernel->summary()
               << " score:" << score;
       scored.emplace_back(score, std::move(kernel));
     }
-    std::sort(scored.begin(), scored.end(), KernelScoreCmp);
+    std::stable_sort(scored.begin(), scored.end(), KernelScoreCmp);
     instruct.kernels().clear();
 
     if (!instruct.op_info()->HasAttr("enable_int8")) {
@@ -85,24 +110,31 @@ void StaticKernelPickPass::Apply(const std::unique_ptr<SSAGraph>& graph) {
       if (out_type_int8) {
         auto out_node = node.outlinks.front();
         CHECK(out_node->IsArg());
+        auto out_node_name = out_node->arg()->name;
         auto one_adj_op_node = out_node->outlinks.front();
         CHECK(one_adj_op_node->IsStmt());
         auto& one_adj_instruct = one_adj_op_node->AsStmt();
         CHECK(one_adj_instruct.op_info()->HasAttr("enable_int8"));
-        CHECK(one_adj_instruct.op_info()->HasAttr("input_scale"));
+        CHECK(one_adj_instruct.op_info()->HasInputScale(out_node_name));
 
-        instruct.mutable_op_info()->SetAttr(
-            "output_scale",
-            one_adj_instruct.op_info()->GetAttr<float>("input_scale"));
+        instruct.mutable_op_info()->SetOutputScale(
+            out_node_name,
+            one_adj_instruct.op_info()->GetInputScale(out_node_name));
 
         auto update_desc = *instruct.mutable_op_info();
         instruct.ResetOp(update_desc, graph->valid_places());
         scored.clear();
         for (auto&& kernel : instruct.kernels()) {
-          float score = KernelGrade(*kernel, graph->valid_places());
+          float score = KernelGrade(instruct,
+                                    *kernel,
+                                    graph->valid_places(),
+                                    in_types,
+                                    out_types,
+                                    instruct.op_info()->input_names(),
+                                    instruct.op_info()->output_names());
           scored.emplace_back(score, std::move(kernel));
         }
-        std::sort(scored.begin(), scored.end(), KernelScoreCmp);
+        std::stable_sort(scored.begin(), scored.end(), KernelScoreCmp);
         instruct.kernels().clear();
       }
       // If the out_type_int8 is true, we should pick the kernel with the

@@ -17,18 +17,68 @@
 #include "lite/api/paddle_api.h"
 #include "lite/core/version.h"
 #include "lite/model_parser/model_parser.h"
+#ifndef LITE_ON_TINY_PUBLISH
+#include "lite/api/paddle_use_kernels.h"
+#include "lite/api/paddle_use_ops.h"
+#endif
+
+#if (defined LITE_WITH_X86) && (defined PADDLE_WITH_MKLML) && \
+    !(defined LITE_ON_MODEL_OPTIMIZE_TOOL)
+#include "lite/backends/x86/mklml.h"
+#endif
 
 namespace paddle {
 namespace lite {
 
 void LightPredictorImpl::Init(const lite_api::MobileConfig& config) {
   // LightPredictor Only support NaiveBuffer backend in publish lib
-  raw_predictor_.reset(
-      new LightPredictor(config.model_dir(),
-                         config.model_buffer(),
-                         config.param_buffer(),
-                         config.model_from_memory(),
-                         lite_api::LiteModelType::kNaiveBuffer));
+  if (config.lite_model_file().empty()) {
+    raw_predictor_.reset(
+        new LightPredictor(config.model_dir(),
+                           config.model_buffer(),
+                           config.param_buffer(),
+                           config.is_model_from_memory(),
+                           lite_api::LiteModelType::kNaiveBuffer));
+  } else {
+    raw_predictor_.reset(new LightPredictor(config.lite_model_file(),
+                                            config.is_model_from_memory()));
+  }
+  mode_ = config.power_mode();
+  threads_ = config.threads();
+
+#ifdef LITE_WITH_NPU
+  // Store the model-level configuration into scope for kernels, and use
+  // exe_scope to store the execution-level configuration
+  Context<TargetType::kNPU>::SetSubgraphModelCacheDir(
+      raw_predictor_->scope(), config.subgraph_model_cache_dir());
+#endif
+
+#ifdef LITE_WITH_APU
+  // Store the model-level configuration into scope for kernels, and use
+  // exe_scope to store the execution-level configuration
+  Context<TargetType::kAPU>::SetSubgraphModelCacheDir(
+      raw_predictor_->scope(), config.subgraph_model_cache_dir());
+#endif
+
+#ifdef LITE_WITH_HUAWEI_ASCEND_NPU
+  Context<TargetType::kHuaweiAscendNPU>::SetHuaweiAscendDeviceID(
+      config.get_device_id());
+  Context<TargetType::kHuaweiAscendNPU>::SetSubgraphModelCacheDir(
+      config.subgraph_model_cache_dir());
+#endif
+#if (defined LITE_WITH_X86) && (defined PADDLE_WITH_MKLML) && \
+    !(defined LITE_ON_MODEL_OPTIMIZE_TOOL)
+  int num_threads = config.x86_math_num_threads();
+  int real_num_threads = num_threads > 1 ? num_threads : 1;
+#ifdef LITE_WITH_STATIC_MKL
+  MKL_Set_Num_Threads(real_num_threads);
+#else
+  x86::MKL_Set_Num_Threads(real_num_threads);
+#endif
+  VLOG(3) << "set_x86_math_library_math_threads() is set successfully and the "
+             "number of threads is:"
+          << real_num_threads;
+#endif
 }
 
 std::unique_ptr<lite_api::Tensor> LightPredictorImpl::GetInput(int i) {
@@ -42,10 +92,22 @@ std::unique_ptr<const lite_api::Tensor> LightPredictorImpl::GetOutput(
       new lite_api::Tensor(raw_predictor_->GetOutput(i)));
 }
 
-void LightPredictorImpl::Run() { raw_predictor_->Run(); }
+void LightPredictorImpl::Run() {
+#ifdef LITE_WITH_ARM
+  lite::DeviceInfo::Global().SetRunMode(mode_, threads_);
+#endif
+  raw_predictor_->Run();
+}
 
 std::shared_ptr<lite_api::PaddlePredictor> LightPredictorImpl::Clone() {
   LOG(FATAL) << "The Clone API is not supported in LigthPredictor";
+  return nullptr;
+}
+
+std::shared_ptr<lite_api::PaddlePredictor> LightPredictorImpl::Clone(
+    const std::vector<std::string>& var_names) {
+  LOG(FATAL) << "The Clone API is not supported in LigthPredictor";
+  return nullptr;
 }
 
 std::string LightPredictorImpl::GetVersion() const { return lite::version(); }

@@ -13,12 +13,22 @@
 // limitations under the License.
 
 #pragma once
+<<<<<<< HEAD
 #include "lite/utils/cv/cv_enum.h"
 
 typedef paddle::lite::utils::cv::ImageFormat ImageFormat;
 typedef paddle::lite::utils::cv::FlipParam FlipParam;
 typedef paddle::lite::utils::cv::LayOut LayOut;
 typedef paddle::lite::Tensor Tensor;
+=======
+
+#include "lite/utils/cv/paddle_image_preprocess.h"
+
+typedef paddle::lite::utils::cv::ImageFormat ImageFormat;
+typedef paddle::lite::utils::cv::FlipParam FlipParam;
+typedef paddle::lite::Tensor Tensor;
+typedef paddle::lite_api::DataLayoutType LayoutType;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
 void nv2bgr(const uint8_t* in_data,
             uint8_t* out_data,
@@ -192,7 +202,10 @@ void nv21_bgra_basic(const uint8_t* in_data,
 }
 
 /*
+<<<<<<< HEAD
 /*
+=======
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 采用CV_BGR2GRAY,转换公式Gray = 0.1140*B + 0.5870*G + 0.2989*R
 采用CV_RGB2GRAY,转换公式Gray = 0.1140*R + 0.5870*G + 0.2989*B
 b = 0.114 *128 = 14.529 = 15
@@ -216,6 +229,24 @@ void bgr_gray_basic(const uint8_t* in_data,
     }
   }
 }
+<<<<<<< HEAD
+=======
+void bgra_gray_basic(const uint8_t* in_data,
+                     uint8_t* out_data,
+                     int srcw,
+                     int srch) {
+  for (int i = 0; i < srch; i++) {
+    const uint8_t* din_ptr = in_data + i * 4 * srcw;
+    uint8_t* dout_ptr = out_data + i * srcw;
+    for (int j = 0; j < srcw; j++) {
+      int sum = din_ptr[0] * 15 + din_ptr[1] * 75 + din_ptr[2] * 38;
+      sum = sum >> 7;
+      *dout_ptr++ = sum;
+      din_ptr += 4;
+    }
+  }
+}
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
 void gray_bgr_basic(const uint8_t* src, uint8_t* dst, int srcw, int srch) {
   for (int i = 0; i < srch; i++) {
@@ -227,6 +258,20 @@ void gray_bgr_basic(const uint8_t* src, uint8_t* dst, int srcw, int srch) {
     }
   }
 }
+<<<<<<< HEAD
+=======
+void gray_bgra_basic(const uint8_t* src, uint8_t* dst, int srcw, int srch) {
+  for (int i = 0; i < srch; i++) {
+    for (int j = 0; j < srcw; j++) {
+      *dst++ = *src;
+      *dst++ = *src;
+      *dst++ = *src;
+      *dst++ = 255;
+      src++;
+    }
+  }
+}
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 // bgr2bgra, rgb2rgba
 void hwc3_to_hwc4_basic(const uint8_t* src, uint8_t* dst, int srcw, int srch) {
   for (int i = 0; i < srch; i++) {
@@ -340,6 +385,19 @@ void image_convert_basic(const uint8_t* in_data,
                 dstFormat == ImageFormat::BGR)) {
       gray_bgr_basic(in_data, out_data, srcw, srch);
     } else if ((srcFormat == ImageFormat::RGBA &&
+<<<<<<< HEAD
+=======
+                dstFormat == ImageFormat::GRAY) ||
+               (srcFormat == ImageFormat::BGRA &&
+                dstFormat == ImageFormat::GRAY)) {
+      bgra_gray_basic(in_data, out_data, srcw, srch);
+    } else if ((srcFormat == ImageFormat::GRAY &&
+                dstFormat == ImageFormat::RGBA) ||
+               (srcFormat == ImageFormat::GRAY &&
+                dstFormat == ImageFormat::BGRA)) {
+      gray_bgra_basic(in_data, out_data, srcw, srch);
+    } else if ((srcFormat == ImageFormat::RGBA &&
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
                 dstFormat == ImageFormat::RGB) ||
                (srcFormat == ImageFormat::BGRA &&
                 dstFormat == ImageFormat::BGR)) {
@@ -453,7 +511,11 @@ void image_resize_basic(const uint8_t* in_data,
   int size = srcw * srch;
   if (srcw == dstw && srch == dsth) {
     if (srcFormat == ImageFormat::NV12 || srcFormat == ImageFormat::NV21) {
+<<<<<<< HEAD
       size = srcw * (ceil(1.5 * srch));
+=======
+      size = srcw * (static_cast<int>(1.5 * srch));
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
     } else if (srcFormat == ImageFormat::BGR || srcFormat == ImageFormat::RGB) {
       size = 3 * srcw * srch;
     } else if (srcFormat == ImageFormat::BGRA ||
@@ -463,23 +525,38 @@ void image_resize_basic(const uint8_t* in_data,
     memcpy(out_data, in_data, sizeof(uint8_t) * size);
     return;
   }
+<<<<<<< HEAD
   double scale_x = static_cast<double>(srcw / dstw);
   double scale_y = static_cast<double>(srch / dsth);
+=======
+  double scale_x = static_cast<double>(srcw) / dstw;
+  double scale_y = static_cast<double>(srch) / dsth;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
   int* buf = new int[dstw + dsth];
 
   int* xofs = buf;
   int* yofs = buf + dstw;
   float* ialpha = new float[dstw * 2];
+<<<<<<< HEAD
   float* ibeta = new float[dsth * 2];
+=======
+  float* ibeta = new float[dsth * 3];
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
   int w_in = srcw;
   int w_out = dstw;
   int num = 1;
   int orih = dsth;
+<<<<<<< HEAD
   compute_xy(
       srcw, srch, dstw, dsth, scale_x, scale_y, xofs, yofs, ialpha, ibeta);
 
+=======
+
+  compute_xy(
+      srcw, srch, dstw, dsth, scale_x, scale_y, xofs, yofs, ialpha, ibeta);
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   if (srcFormat == ImageFormat::GRAY) {
     num = 1;
   } else if (srcFormat == ImageFormat::NV12 || srcFormat == ImageFormat::NV21) {
@@ -502,10 +579,17 @@ void image_resize_basic(const uint8_t* in_data,
   int* yofs1 = nullptr;
   if (orih < dsth) {
     int tmp = dsth - orih;
+<<<<<<< HEAD
     float* ialpha1 = new float[dstw];
     int* xofs1 = new int[srcw];
     int* yofs1 = new int[tmp];
     compute_xy(srcw / 2,
+=======
+    ialpha1 = new float[dstw];
+    xofs1 = new int[dstw];
+    yofs1 = new int[tmp];
+    compute_xy(srcw,
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
                srch / 2,
                dstw / 2,
                tmp,
@@ -514,17 +598,26 @@ void image_resize_basic(const uint8_t* in_data,
                xofs1,
                yofs1,
                ialpha1,
+<<<<<<< HEAD
                ibeta + dsth);
+=======
+               ibeta + orih * 2);
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   }
 #pragma omp parallel for
   for (int dy = 0; dy < dsth; dy++) {
     uint8_t* out_ptr = out_data + dy * w_out;
     int y_in_start = yofs[dy];
+<<<<<<< HEAD
     int y_in_end = y_in_start + 1;
     int y_flag = 0;  // only one line
     if (y_in_start < 0) {
       y_flag = 1;
     }
+=======
+    int y_flag = 0;
+
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
     float b0 = ibeta[dy * 2];
     float b1 = ibeta[dy * 2 + 1];
     if (dy >= orih) {
@@ -532,6 +625,15 @@ void image_resize_basic(const uint8_t* in_data,
       ialpha = ialpha1;
       xofs = xofs1;
       yofs = yofs1;
+<<<<<<< HEAD
+=======
+      y_in_start = yofs[dy - orih] + srch;
+    }
+    int y_in_end = y_in_start + 1;
+    if (y_in_start < 0) {
+      y_flag = 1;
+      y_in_end = 0;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
     }
     for (int dx = 0; dx < w_out; dx += num) {
       int tmp = dx / num;
@@ -542,7 +644,10 @@ void image_resize_basic(const uint8_t* in_data,
         x_flag = 1;
         x_in_end = 0;
       }
+<<<<<<< HEAD
       // printf("x_in: %d, y_in: %d \n", x_in_start, y_in_start);
+=======
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       float a0 = ialpha[tmp * 2];
       float a1 = ialpha[tmp * 2 + 1];
       int tl_index = y_in_start * w_in + x_in_start;  // 0
@@ -568,9 +673,12 @@ void image_resize_basic(const uint8_t* in_data,
         bl_index++;
         br_index++;
         float outval = (tl * a0 + tr * a1) * b0 + (bl * a0 + br * a1) * b1;
+<<<<<<< HEAD
         // printf("tl: %d, tr: %d, bl: %d, br: %d \n", tl, tr, bl, br);
         // printf("br_index: %d, a0: %f, b1: %f, out: %f \n", br_index, a0, b1,
         // outval);
+=======
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
         out_ptr[ind++] = ceil(outval);
       }
     }
@@ -749,6 +857,29 @@ void image_flip_basic(const uint8_t* in_data,
     flipxy_basic(in_data, srch, srcw, out_data, num);
   }
 }
+<<<<<<< HEAD
+=======
+void gray_to_tensor_basic(const uint8_t* bgr,
+                          float* output,
+                          int width,
+                          int height,
+                          float* means,
+                          float* scales,
+                          int num) {
+  int size = width * height;
+  float mean_val = means[0];
+  float scale_val = scales[0];
+
+  for (int h = 0; h < height; h++) {
+    const uint8_t* ptr_bgr = bgr + h * width * num;
+    float* ptr_h = output + h * width;
+    for (int i = 0; i < width; i++) {
+      *ptr_h++ = (ptr_bgr[0] - mean_val) * scale_val;
+      ptr_bgr += num;
+    }
+  }
+}
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
 void bgr_to_tensor_chw_basic(const uint8_t* bgr,
                              float* output,
@@ -809,12 +940,17 @@ void bgr_to_tensor_hwc_basic(const uint8_t* bgr,
 void image_to_tensor_basic(const uint8_t* in_data,
                            Tensor* dst,
                            ImageFormat srcFormat,
+<<<<<<< HEAD
                            LayOut layout,
+=======
+                           LayoutType layout,
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
                            int srcw,
                            int srch,
                            float* means,
                            float* scales) {
   float* output = dst->mutable_data<float>();
+<<<<<<< HEAD
   if (layout == LayOut::CHW &&
       (srcFormat == ImageFormat::BGR || srcFormat == ImageFormat::RGB)) {
     bgr_to_tensor_chw_basic(in_data, output, srcw, srch, means, scales, 3);
@@ -827,5 +963,22 @@ void image_to_tensor_basic(const uint8_t* in_data,
   } else if (layout == LayOut::HWC && (srcFormat == ImageFormat::BGRA ||
                                        srcFormat == ImageFormat::RGBA)) {
     bgr_to_tensor_hwc_basic(in_data, output, srcw, srch, means, scales, 4);
+=======
+  if (layout == LayoutType::kNCHW &&
+      (srcFormat == ImageFormat::BGR || srcFormat == ImageFormat::RGB)) {
+    bgr_to_tensor_chw_basic(in_data, output, srcw, srch, means, scales, 3);
+  } else if (layout == LayoutType::kNHWC &&
+             (srcFormat == ImageFormat::BGR || srcFormat == ImageFormat::RGB)) {
+    bgr_to_tensor_hwc_basic(in_data, output, srcw, srch, means, scales, 3);
+  } else if (layout == LayoutType::kNCHW && (srcFormat == ImageFormat::BGRA ||
+                                             srcFormat == ImageFormat::RGBA)) {
+    bgr_to_tensor_chw_basic(in_data, output, srcw, srch, means, scales, 4);
+  } else if (layout == LayoutType::kNHWC && (srcFormat == ImageFormat::BGRA ||
+                                             srcFormat == ImageFormat::RGBA)) {
+    bgr_to_tensor_hwc_basic(in_data, output, srcw, srch, means, scales, 4);
+  } else if (srcFormat == ImageFormat::GRAY &&
+             (layout == LayoutType::kNHWC || layout == LayoutType::kNCHW)) {
+    gray_to_tensor_basic(in_data, output, srcw, srch, means, scales, 1);
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   }
 }

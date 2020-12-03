@@ -13,9 +13,15 @@
 // limitations under the License.
 
 #pragma once
+<<<<<<< HEAD
 #include <stdint.h>
 #include "lite/core/tensor.h"
 #include "lite/utils/cv/cv_enum.h"
+=======
+
+#include <stdint.h>
+#include "lite/utils/cv/paddle_image_preprocess.h"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 namespace paddle {
 namespace lite {
 namespace utils {
@@ -31,7 +37,11 @@ class Image2Tensor {
   void choose(const uint8_t* src,
               Tensor* dst,
               ImageFormat srcFormat,
+<<<<<<< HEAD
               LayOut layout,
+=======
+              LayoutType layout,
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
               int srcw,
               int srch,
               float* means,

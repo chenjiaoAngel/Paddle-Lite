@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "lite/kernels/arm/lrn_compute.h"
 #include <gtest/gtest.h>
+
 #include <cmath>
 #include <string>
 #include <vector>
+
 #include "lite/core/op_registry.h"
+#include "lite/kernels/arm/lrn_compute.h"
 
 namespace paddle {
 namespace lite {
@@ -91,7 +93,7 @@ void lrn_compute_ref(const operators::LrnParam& param) {
   const dtype* x_data = param.X->data<const dtype>();
   dtype* out_data = param.Out->mutable_data<dtype>();
   auto x_dims = param.X->dims();
-  int local_size = param.local_size;
+  int local_size = param.n;
   float alpha = param.alpha;
   float beta = param.beta;
   float k = param.k;
@@ -133,8 +135,7 @@ void lrn_compute_ref(const operators::LrnParam& param) {
 }
 
 TEST(lrn_arm, retrive_op) {
-  auto lrn =
-      KernelRegistry::Global().Create<TARGET(kARM), PRECISION(kFloat)>("lrn");
+  auto lrn = KernelRegistry::Global().Create("lrn");
   ASSERT_FALSE(lrn.empty());
   ASSERT_TRUE(lrn.front());
 }
@@ -171,7 +172,7 @@ TEST(lrn_arm, compute) {
           }
           param.X = &x;
           param.Out = &output;
-          param.local_size = local_size;
+          param.n = local_size;
           param.alpha = alpha;
           param.beta = beta;
           param.k = k;

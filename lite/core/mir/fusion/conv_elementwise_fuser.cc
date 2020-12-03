@@ -30,7 +30,8 @@ void ConvElementwiseFuser::BuildPattern() {
   auto* bias = VarNode("bias")
                    ->assert_is_op_input("elementwise_add", "Y")
                    ->AsInput()
-                   ->assert_is_persistable_var();
+                   ->assert_is_persistable_var()
+                   ->assert_only_one_output();
 
   // create op nodes
   auto* conv2d = OpNode("conv2d", conv_type_)->assert_is_op(conv_type_);
@@ -90,6 +91,27 @@ void ConvElementwiseFuser::InsertNewNode(SSAGraph* graph,
               ->GetMutable<lite::Tensor>();
       auto elementwise_add_bias_d =
           elementwise_add_bias_t->mutable_data<float>();
+
+      auto conv_bias_size = conv_bias_t->numel();
+      auto elemetwise_bias_size = elementwise_add_bias_t->numel();
+      // If elements size of `elemwise_bias` and `conv_bias` are not same,
+      // `elemwise_bias` should be broadcast to the same size of `conv_bias`
+      if (conv_bias_size != elemetwise_bias_size && elemetwise_bias_size == 1) {
+        auto data_tmp = elementwise_add_bias_d[0];
+        elementwise_add_bias_t->Resize({conv_bias_size});
+        elementwise_add_bias_d = elementwise_add_bias_t->mutable_data<float>();
+        for (int64_t i = 0; i < conv_bias_size; i++) {
+          elementwise_add_bias_d[i] = data_tmp;
+        }
+      }
+      if (conv_bias_t->numel() != elementwise_add_bias_t->numel()) {
+        LOG(WARNING) << "Elements size of `elemwise_bias` and `conv_bias` "
+                        "should be the same, but get size of `elemwise_bias` "
+                        "is: "
+                     << elementwise_add_bias_t->numel()
+                     << ", size of `conv_bias` is: " << conv_bias_t->numel();
+        return;
+      }
 
       for (unsigned int i = 0; i < conv_bias_t->data_size(); ++i) {
         elementwise_add_bias_d[i] += conv_bias_d[i];

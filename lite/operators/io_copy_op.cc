@@ -24,8 +24,11 @@ bool IoCopyOp::CheckShape() const {
   CHECK_OR_FALSE(param_.y);
   return true;
 }
-bool IoCopyOp::InferShape() const {
+bool IoCopyOp::InferShapeImpl() const {
   param_.y->Resize(param_.x->dims());
+  param_.y->set_lod(param_.x->lod());
+  param_.y->set_precision(param_.x->precision());
+  param_.y->set_persistable(param_.x->persistable());
   return true;
 }
 bool IoCopyOp::Run() { return OpLite::Run(); }
@@ -35,6 +38,9 @@ bool IoCopyOp::AttachImpl(const cpp::OpDesc &opdesc,
   auto out = opdesc.Output("Out").front();
   param_.x = GetTensor(scope, x);
   param_.y = GetMutableTensor(scope, out);
+  if (opdesc.HasAttr("process_type")) {
+    param_.process_type = opdesc.GetAttr<int>("process_type");
+  }
   return true;
 }
 std::string IoCopyOp::DebugString() const { return "io_copy_op"; }

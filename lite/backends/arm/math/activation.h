@@ -69,6 +69,30 @@ void act_hard_sigmoid(const T* din,
 template <typename T>
 void act_rsqrt(const T* din, T* dout, int size, int threads);
 
+template <typename T>
+void act_square(const T* din, T* dout, int size, int threads);
+
+template <typename T>
+void act_hard_swish(const T* din,
+                    T* dout,
+                    int size,
+                    float threshold,
+                    float scale,
+                    float offset,
+                    int threads);
+template <typename T>
+void act_reciprocal(const T* din, T* dout, int size, int threads);
+
+template <typename T>
+void act_abs(const T* din, T* dout, int size, int threads);
+
+template <typename T>
+void act_thresholded_relu(
+    const T* din, T* dout, int size, float threshold, int threads);
+
+template <typename T>
+void act_elu(const T* din, T* dout, int size, float alpha, int threads);
+
 }  // namespace math
 }  // namespace arm
 }  // namespace lite

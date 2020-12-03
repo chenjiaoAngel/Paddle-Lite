@@ -15,6 +15,7 @@
 #pragma once
 
 #include <cmath>
+#include <string>
 #include <vector>
 #include "lite/backends/arm/math/conv_impl.h"
 #include "lite/core/context.h"
@@ -46,12 +47,23 @@ class DepthwiseConv : public KernelLite<TARGET(kARM), Ptype> {
   DepthwiseConv() = default;
   ~DepthwiseConv() {}
   virtual void PrepareForRun();
+  virtual void ReInitWhenNeeded();
   virtual void Run();
+
+#ifdef LITE_WITH_PROFILE
+  virtual void SetProfileRuntimeKernelInfo(
+      paddle::lite::profile::OpCharacter* ch) {
+    ch->kernel_func_name = kernel_func_name_;
+  }
+
+  std::string kernel_func_name_{"NotImplForConvDw"};
+#endif
 
  private:
   using param_t = operators::ConvParam;
   Tensor weights_;
   Tensor bias_;
+  DDim last_shape_;
   bool flag_trans_weights_{false};
   bool flag_trans_bias_{false};
   conv_dw_impl impl_{nullptr};

@@ -16,6 +16,7 @@
 
 #include <cmath>
 #include "lite/backends/arm/math/packed_sgemm.h"
+#include "lite/backends/arm/math/sgemv.h"
 #include "lite/core/context.h"
 #include "lite/core/device_info.h"
 
@@ -39,7 +40,7 @@ void sgemm(bool is_transA,
            int ldc,
            const float* bias,
            bool is_bias,
-           bool is_relu,
+           const operators::ActivationParam act_param,
            ARMContext* ctx);
 
 }  // namespace math

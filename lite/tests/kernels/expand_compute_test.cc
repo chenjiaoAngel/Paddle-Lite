@@ -20,11 +20,16 @@
 namespace paddle {
 namespace lite {
 
+template <class T,
+          bool has_expandtimes = false,
+          bool has_expand_times_tensor = false>
 class ExpandComputeTester : public arena::TestCase {
  protected:
   // common attributes for this op.
   std::string x_ = "X";
   std::string out_ = "Out";
+  std::string expandtimes_ = "ExpandTimes";
+  std::string expand_times_tensor_ = "expand_times_tensor";
   std::vector<int> expand_times_;
   DDim dims_;
 
@@ -48,8 +53,8 @@ class ExpandComputeTester : public arena::TestCase {
       out_shape[i] *= expand_times_[i];
     }
     out->Resize(out_shape);
-    float* out_data = out->mutable_data<float>();
-    const float* input_data = input->data<float>();
+    T* out_data = out->template mutable_data<T>();
+    const T* input_data = input->template data<T>();
     std::vector<int> in_stride(in_shape.size(), 1),
         out_stride(out_shape.size(), 1);
     for (int i = in_shape.size() - 2; i >= 0; --i) {
@@ -71,29 +76,59 @@ class ExpandComputeTester : public arena::TestCase {
   void PrepareOpDesc(cpp::OpDesc* op_desc) {
     op_desc->SetType("expand");
     op_desc->SetInput("X", {x_});
+    if (has_expandtimes) {
+      op_desc->SetInput("ExpandTimes", {expandtimes_});
+    }
+    if (has_expand_times_tensor) {
+      op_desc->SetInput("expand_times_tensor", {expand_times_tensor_});
+    }
     op_desc->SetOutput("Out", {out_});
     op_desc->SetAttr("expand_times", expand_times_);
   }
 
   void PrepareData() override {
-    std::vector<float> in_data(dims_.production());
+    std::vector<T> in_data(dims_.production());
     for (int i = 0; i < dims_.production(); ++i) {
       in_data[i] = i;
     }
     SetCommonTensor(x_, dims_, in_data.data());
+
+    if (has_expandtimes) {
+      SetCommonTensor(expandtimes_,
+                      DDim{{static_cast<int64_t>(expand_times_.size())}},
+                      expand_times_.data());
+    }
+    if (has_expand_times_tensor) {
+      std::vector<DDim> expand_times_tensor_dims(expand_times_.size(),
+                                                 DDim{{1}});
+      std::vector<std::vector<int>> expand_times_tensor_data;
+      for (size_t i = 0; i < expand_times_.size(); i++) {
+        expand_times_tensor_data.push_back({expand_times_[i]});
+      }
+      SetCommonTensorList(expand_times_tensor_,
+                          expand_times_tensor_dims,
+                          expand_times_tensor_data);
+    }
   }
 };
 
-void test_expand_3dim(Place place) {
+template <class T,
+          bool has_expandtimes = false,
+          bool has_expand_times_tensor = false>
+void test_expand_3dim(Place place, float abs_error) {
+  place.precision = lite_api::PrecisionTypeTrait<T>::Type();
   for (std::vector<int> expand_times : {std::vector<int>({2, 3, 1}),
                                         std::vector<int>({2, 2, 2}),
                                         std::vector<int>({3, 1, 2})}) {
     for (int C : {3}) {
       for (int H : {2}) {
         for (int W : {4}) {
-          std::unique_ptr<arena::TestCase> tester(new ExpandComputeTester(
-              place, "def", expand_times, DDim({C, H, W})));
-          arena::Arena arena(std::move(tester), place, 2e-5);
+          std::unique_ptr<arena::TestCase> tester(
+              new ExpandComputeTester<T,
+                                      has_expandtimes,
+                                      has_expand_times_tensor>(
+                  place, "def", expand_times, DDim({C, H, W})));
+          arena::Arena arena(std::move(tester), place, abs_error);
           arena.TestPrecision();
         }
       }
@@ -101,7 +136,11 @@ void test_expand_3dim(Place place) {
   }
 }
 
-void test_expand_4dim(Place place) {
+template <class T,
+          bool has_expandtimes = false,
+          bool has_expand_times_tensor = false>
+void test_expand_4dim(Place place, float abs_error) {
+  place.precision = lite_api::PrecisionTypeTrait<T>::Type();
   for (std::vector<int> expand_times : {std::vector<int>({2, 3, 1, 4}),
                                         std::vector<int>({2, 2, 2, 2}),
                                         std::vector<int>({3, 1, 2, 1})}) {
@@ -109,9 +148,12 @@ void test_expand_4dim(Place place) {
       for (int C : {3}) {
         for (int H : {2}) {
           for (int W : {4}) {
-            std::unique_ptr<arena::TestCase> tester(new ExpandComputeTester(
-                place, "def", expand_times, DDim({N, C, H, W})));
-            arena::Arena arena(std::move(tester), place, 2e-5);
+            std::unique_ptr<arena::TestCase> tester(
+                new ExpandComputeTester<T,
+                                        has_expandtimes,
+                                        has_expand_times_tensor>(
+                    place, "def", expand_times, DDim({N, C, H, W})));
+            arena::Arena arena(std::move(tester), place, abs_error);
             arena.TestPrecision();
           }
         }
@@ -121,13 +163,25 @@ void test_expand_4dim(Place place) {
 }
 
 TEST(Expand, precision) {
-#ifdef LITE_WITH_X86
-  Place place(TARGET(kX86));
+  float abs_error = 1e-5;
+  Place place;
+#if defined(LITE_WITH_NPU)
+  place = TARGET(kNPU);
+  abs_error = 1e-2;  // Using fp16 in NPU
+#elif defined(LITE_WITH_ARM)
+  place = TARGET(kHost);
+#else
+  return;
 #endif
-#ifdef LITE_WITH_ARM
-  Place place(TARGET(kARM));
-  test_expand_3dim(place);
-  test_expand_4dim(place);
+
+  test_expand_3dim<float>(place, abs_error);
+  test_expand_4dim<float>(place, abs_error);
+#ifndef LITE_WITH_NPU
+  test_expand_3dim<int>(place, abs_error);
+  test_expand_4dim<int>(place, abs_error);
+  test_expand_4dim<float, true>(place, abs_error);
+  test_expand_4dim<float, false, true>(place, abs_error);
+  test_expand_4dim<int, true, true>(place, abs_error);
 #endif
 }
 

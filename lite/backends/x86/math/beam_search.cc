@@ -14,6 +14,7 @@ limitations under the License. */
 
 #include "lite/backends/x86/math/beam_search.h"
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include "lite/fluid/lod.h"
 
@@ -95,8 +96,8 @@ class BeamSearchFunctor<TARGET(kX86), T> {
     //        : nullptr;
 
     // fill in data
-    std::vector<size_t> low_level;
-    size_t low_offset = 0;
+    std::vector<uint64_t> low_level;
+    uint64_t low_offset = 0;
     for (auto &items : selected_items) {
       low_level.push_back(low_offset);
       for (auto &item : items) {
@@ -115,7 +116,7 @@ class BeamSearchFunctor<TARGET(kX86), T> {
     lod[0].assign(high_level.begin(), high_level.end());
     lod[1].assign(low_level.begin(), low_level.end());
     // if (!lite::fluid::CheckLoD(lod)) {
-    //  //PADDLE_THROW("lod %s is not right", framework::LoDToString(lod));
+    //  //LOG(FATAL)<<"lod %s is not right", framework::LoDToString(lod));
     //}
     selected_ids->set_lod(lod);
     selected_scores->set_lod(lod);
@@ -264,7 +265,7 @@ class BeamSearchFunctor<TARGET(kX86), T> {
     // size_t num_seqs = scores->NumElements(lod_level);
     size_t num_seqs = scores->lod()[lod_level].size() - 1;
     size_t seq_width = 1;
-    for (int i = 1; i < scores->dims().size(); i++) {
+    for (size_t i = 1; i < scores->dims().size(); i++) {
       seq_width *= scores->dims()[i];
     }
 

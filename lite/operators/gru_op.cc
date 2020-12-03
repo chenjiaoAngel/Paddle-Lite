@@ -28,8 +28,8 @@ bool GRUOpLite::CheckShape() const {
   CHECK_OR_FALSE(param_.batch_hidden)
   CHECK_OR_FALSE(param_.hidden)
 
-  auto input_dims = param_.input->dims();
-  auto weight_dims = param_.weight->dims();
+  const auto& input_dims = param_.input->dims();
+  const auto& weight_dims = param_.weight->dims();
   int input_size = input_dims[1];
   int frame_size = weight_dims[0];
   CHECK_EQ_OR_FALSE(input_size, frame_size * 3)
@@ -51,31 +51,32 @@ bool GRUOpLite::CheckShape() const {
   return true;
 }
 
-bool GRUOpLite::InferShape() const {
-  auto input_dims = param_.input->dims();
-  auto weight_dims = param_.weight->dims();
+bool GRUOpLite::InferShapeImpl() const {
+  const auto& input_dims = param_.input->dims();
+  const auto& weight_dims = param_.weight->dims();
   int frame_size = weight_dims[0];
   auto batch_size = input_dims[0];
 
   param_.batch_gate->Resize(input_dims);
-  param_.batch_reset_hidden_prev->Resize(lite::DDim({batch_size, frame_size}));
-  param_.batch_hidden->Resize(lite::DDim({batch_size, frame_size}));
-  param_.hidden->Resize(lite::DDim({batch_size, frame_size}));
+
+  DDim out_dims({batch_size, frame_size});
+  param_.batch_reset_hidden_prev->Resize(out_dims);
+  param_.batch_hidden->Resize(out_dims);
+  param_.hidden->Resize(out_dims);
 
   *(param_.hidden->mutable_lod()) = param_.input->lod();
   return true;
 }
 
-bool GRUOpLite::AttachImpl(const cpp::OpDesc &op_desc, lite::Scope *scope) {
+bool GRUOpLite::AttachImpl(const cpp::OpDesc& op_desc, lite::Scope* scope) {
   auto input = op_desc.Input("Input").front();
   auto weight = op_desc.Input("Weight").front();
   auto batch_gate = op_desc.Output("BatchGate").front();
   auto batch_reset_hidden_prev = op_desc.Output("BatchResetHiddenPrev").front();
   auto batch_hidden = op_desc.Output("BatchHidden").front();
   auto hidden = op_desc.Output("Hidden").front();
-
   param_.input = scope->FindVar(input)->GetMutable<lite::Tensor>();
-  if (op_desc.Input("H0").size()) {
+  if (!op_desc.Input("H0").empty()) {
     auto h0 = op_desc.Input("H0").front();
     param_.h0 = scope->FindVar(h0)->GetMutable<lite::Tensor>();
   }
@@ -88,7 +89,7 @@ bool GRUOpLite::AttachImpl(const cpp::OpDesc &op_desc, lite::Scope *scope) {
       scope->FindVar(batch_hidden)->GetMutable<lite::Tensor>();
   param_.hidden = scope->FindVar(hidden)->GetMutable<lite::Tensor>();
 
-  if (op_desc.HasInput("Bias")) {
+  if (!op_desc.Input("Bias").empty()) {
     auto bias = op_desc.Input("Bias").front();
     param_.bias = scope->FindVar(bias)->GetMutable<lite::Tensor>();
   }
@@ -96,7 +97,9 @@ bool GRUOpLite::AttachImpl(const cpp::OpDesc &op_desc, lite::Scope *scope) {
   param_.gate_activation = op_desc.GetAttr<std::string>("gate_activation");
   param_.activation = op_desc.GetAttr<std::string>("activation");
   param_.is_reverse = op_desc.GetAttr<bool>("is_reverse");
-  param_.origin_mode = op_desc.GetAttr<bool>("origin_mode");
+  if (op_desc.HasAttr("origin_mode")) {
+    param_.origin_mode = op_desc.GetAttr<bool>("origin_mode");
+  }
 
   return true;
 }

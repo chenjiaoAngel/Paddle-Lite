@@ -14,6 +14,7 @@ limitations under the License. */
 
 #pragma once
 
+#include "lite/backends/fpga/KD/llapi/zynqmp_api.h"
 #include "lite/backends/fpga/KD/pe.hpp"
 #include "lite/backends/fpga/KD/pe_params.hpp"
 
@@ -41,6 +42,7 @@ class OutputPE : public PE {
     } else {
       output->copyFrom(input);
     }
+    output->syncToCPU();
     return true;
   }
 

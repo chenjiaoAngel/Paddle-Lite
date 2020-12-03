@@ -13,8 +13,11 @@
 // limitations under the License.
 
 #pragma once
+#include <algorithm>
+#include <string>
 #include "lite/api/paddle_place.h"
 #include "lite/core/target_wrapper.h"
+#include "lite/utils/logging.h"
 #include "lite/utils/macros.h"
 
 #ifdef LITE_WITH_OPENCL
@@ -25,6 +28,18 @@
 #include "lite/backends/cuda/target_wrapper.h"
 #endif  // LITE_WITH_CUDA
 
+#ifdef LITE_WITH_BM
+#include "lite/backends/bm/target_wrapper.h"
+#endif  // LITE_WITH_BM
+
+#ifdef LITE_WITH_MLU
+#include "lite/backends/mlu/target_wrapper.h"
+#endif  // LITE_WITH_MLU
+
+#ifdef LITE_WITH_XPU
+#include "lite/backends/xpu/target_wrapper.h"
+#endif  // LITE_WITH_XPU
+
 namespace paddle {
 namespace lite {
 
@@ -34,7 +49,9 @@ LITE_API void* TargetMalloc(TargetType target, size_t size);
 
 // Free memory for a specific Target. All the targets should be an element in
 // the `switch` here.
-void LITE_API TargetFree(TargetType target, void* data);
+void LITE_API TargetFree(TargetType target,
+                         void* data,
+                         std::string free_flag = "");
 
 // Copy a buffer from host to another target.
 void TargetCopy(TargetType target, void* dst, const void* src, size_t size);
@@ -67,30 +84,53 @@ void CopySync(void* dst, const void* src, size_t size, IoDirection dir) {
       TargetWrapperCL::MemcpySync(dst, src, size, dir);
       break;
 #endif  // LITE_WITH_OPENCL
+#ifdef LITE_WITH_MLU
+    case TARGET(kMLU):
+      TargetWrapperMlu::MemcpySync(dst, src, size, dir);
+      break;
+#endif
 #ifdef LITE_WITH_FPGA
     case TARGET(kFPGA):
       TargetWrapper<TARGET(kFPGA)>::MemcpySync(dst, src, size, dir);
       break;
 #endif
+#ifdef LITE_WITH_BM
+    case TARGET(kBM):
+      TargetWrapper<TARGET(kBM)>::MemcpySync(dst, src, size, dir);
+      break;
+#endif
+#ifdef LITE_WITH_XPU
+    case TARGET(kXPU):
+      TargetWrapperXPU::MemcpySync(dst, src, size, dir);
+      break;
+#endif
+    default:
+      LOG(FATAL)
+          << "The copy function of this target has not been implemented yet.";
   }
 }
 
 // Memory buffer manager.
 class Buffer {
  public:
-  Buffer() = default;
-  Buffer(TargetType target, size_t size) : space_(size), target_(target) {}
+  Buffer(void* data, TargetType target, size_t size)
+      : space_(size), data_(data), own_data_(false), target_(target) {}
 
   void* data() const { return data_; }
   TargetType target() const { return target_; }
   size_t space() const { return space_; }
+  bool own_data() const { return own_data_; }
 
   void ResetLazy(TargetType target, size_t size) {
     if (target != target_ || space_ < size) {
+      CHECK_EQ(own_data_, true) << "Can not reset unowned buffer.";
       Free();
       data_ = TargetMalloc(target, size);
       target_ = target;
       space_ = size;
+#ifdef LITE_WITH_OPENCL
+      cl_use_image2d_ = false;
+#endif
     }
   }
 
@@ -99,26 +139,35 @@ class Buffer {
 #ifdef LITE_WITH_OPENCL
   template <typename T>
   void ResetLazyImage2D(TargetType target,
-                        const size_t img_w,
-                        const size_t img_h) {
-    size_t size = sizeof(T) * img_w * img_h *
-                  4;  // 4 for RGBA, un-used for opencl Image2D
-    if (target != target_ || cl_image2d_width_ < img_w ||
-        cl_image2d_height_ < img_h) {
+                        const size_t img_w_req,
+                        const size_t img_h_req,
+                        void* host_ptr = nullptr) {
+    if (target != target_ || cl_image2d_width_ < img_w_req ||
+        cl_image2d_height_ < img_h_req || host_ptr != nullptr ||
+        data_ == nullptr) {
+      CHECK_EQ(own_data_, true) << "Can not reset unowned buffer.";
+      cl_image2d_width_ = std::max(cl_image2d_width_, img_w_req);
+      cl_image2d_height_ = std::max(cl_image2d_height_, img_h_req);
       Free();
-      data_ = TargetWrapperCL::MallocImage<T>(img_w, img_h);
+      data_ = TargetWrapperCL::MallocImage<T>(
+          cl_image2d_width_, cl_image2d_height_, host_ptr);
       target_ = target;
-      space_ = size;  // un-used for opencl Image2D
-      cl_image2d_width_ = img_w;
-      cl_image2d_height_ = img_h;
+      space_ = sizeof(T) * cl_image2d_width_ * cl_image2d_height_ *
+               4;  // un-used for opencl Image2D, 4 for RGBA,
+      cl_use_image2d_ = true;
     }
   }
 #endif
 
   void Free() {
-    if (space_ > 0) {
-      TargetFree(target_, data_);
+    if (space_ > 0 && own_data_) {
+      if (!cl_use_image2d_) {
+        TargetFree(target_, data_);
+      } else {
+        TargetFree(target_, data_, "cl_use_image2d_");
+      }
     }
+    data_ = nullptr;
     target_ = TargetType::kHost;
     space_ = 0;
   }
@@ -132,12 +181,18 @@ class Buffer {
 
   ~Buffer() { Free(); }
 
+  Buffer() = default;
+  Buffer(const Buffer&) = delete;
+  Buffer(Buffer&&) = default;
+
  private:
   // memory it actually malloced.
   size_t space_{0};
+  bool cl_use_image2d_{false};   // only used for OpenCL Image2D
   size_t cl_image2d_width_{0};   // only used for OpenCL Image2D
   size_t cl_image2d_height_{0};  // only used for OpenCL Image2D
   void* data_{nullptr};
+  bool own_data_{true};
   TargetType target_{TargetType::kHost};
 };
 

@@ -27,9 +27,15 @@ bool FusionElementwiseActivationOp::CheckShape() const {
   return true;
 }
 
-bool FusionElementwiseActivationOp::InferShape() const {
-  CHECK_OR_FALSE(param_.X->dims().size() >= param_.Y->dims().size());
-  param_.Out->Resize(param_.X->dims());
+bool FusionElementwiseActivationOp::InferShapeImpl() const {
+  size_t x_size = param_.X->dims().size();
+  size_t y_size = param_.Y->dims().size();
+  param_.Out->set_lod(param_.X->lod());
+  if (x_size >= y_size) {
+    param_.Out->Resize(param_.X->dims());
+  } else {
+    param_.Out->Resize(param_.Y->dims());
+  }
   return true;
 }
 
@@ -44,8 +50,6 @@ bool FusionElementwiseActivationOp::AttachImpl(const cpp::OpDesc& opdesc,
   param_.Out = GetMutableVar<lite::Tensor>(scope, Out_name);
   param_.axis = opdesc.GetAttr<int>("axis");
   param_.act_type = opdesc.GetAttr<std::string>("act_type");
-  // TODO(sangoly): support more activation types.
-  CHECK(param_.act_type == "relu") << "Only relu activation be supported now";
 
   return true;
 }
@@ -59,7 +63,7 @@ bool FusionElementwiseActivationOp::AttachImpl(const cpp::OpDesc& opdesc,
 //   return true;
 // }
 
-// bool FusionElementwiseActivationGradExplicitOp::InferShape() const {
+// bool FusionElementwiseActivationGradExplicitOp::InferShapeImpl() const {
 //   param_.X_grad->Resize(param_.Out_grad->dims());
 //   param_.Y_grad->Resize(param_.Y->dims());
 //   return true;
@@ -100,8 +104,8 @@ REGISTER_LITE_OP(fusion_elementwise_max_activation,
 REGISTER_LITE_OP(fusion_elementwise_div_activation,
                  paddle::lite::operators::FusionElementwiseActivationOp);
 
-#ifdef LITE_WITH_TRAIN
-REGISTER_LITE_OP(
-    fusion_elementwise_sub_activation_grad,
-    paddle::lite::operators::FusionElementwiseActivationGradExplicitOp);
-#endif
+// #ifdef LITE_WITH_TRAIN
+// REGISTER_LITE_OP(
+//     fusion_elementwise_sub_activation_grad,
+//     paddle::lite::operators::FusionElementwiseActivationGradExplicitOp);
+// #endif

@@ -17,15 +17,21 @@
 #include <fstream>
 #include <limits>
 #include <set>
+#include <utility>
+
+#include "lite/api/paddle_api.h"
 #include "lite/core/scope.h"
 #include "lite/core/tensor.h"
 #include "lite/core/variable.h"
-#include "lite/model_parser/desc_apis.h"
+#include "lite/core/version.h"
+#include "lite/model_parser/base/apis.h"
+#include "lite/model_parser/flatbuffers/io.h"
+#include "lite/model_parser/tensor_io.h"
+#ifndef LITE_ON_TINY_PUBLISH
 #include "lite/model_parser/naive_buffer/combined_params_desc.h"
 #include "lite/model_parser/naive_buffer/param_desc.h"
 #include "lite/model_parser/naive_buffer/program_desc.h"
 #include "lite/model_parser/naive_buffer/var_desc.h"
-#ifndef LITE_ON_TINY_PUBLISH
 #include "lite/model_parser/pb/program_desc.h"
 #include "lite/model_parser/pb/var_desc.h"
 #endif
@@ -35,129 +41,34 @@ namespace paddle {
 namespace lite {
 
 #ifndef LITE_ON_TINY_PUBLISH
-int SizeOfType(framework::proto::VarType::Type type) {
-  using Type = framework::proto::VarType::Type;
-  switch (static_cast<int>(type)) {
-#define DO(desc, type)            \
-  case Type::VarType_Type_##desc: \
-    return sizeof(type);
-    DO(BOOL, bool);
-    DO(FP16, float);
-    DO(FP32, float);
-    DO(INT8, int8_t);
-    DO(INT32, int);
-    DO(INT64, int64_t);
-#undef DO
-    default:
-      LOG(FATAL) << "unknown data type " << type;
-  }
-  return -1;
-}
-
-void TensorFromStream(std::istream &is, lite::Tensor *tensor) {
-  using Type = framework::proto::VarType::Type;
-  uint32_t version;
-  is.read(reinterpret_cast<char *>(&version), sizeof(version));
-  CHECK_EQ(version, 0U) << "Only version 0 is supported";
-  // read tensor desc
-  framework::proto::VarType::TensorDesc desc;
-  {
-    // int32_t size
-    // proto buffer
-    int32_t size;
-    is.read(reinterpret_cast<char *>(&size), sizeof(size));
-    std::unique_ptr<char[]> buf(new char[size]);
-    is.read(reinterpret_cast<char *>(buf.get()), size);
-    CHECK(desc.ParseFromArray(buf.get(), size)) << "Cannot parse tensor desc";
-  }
-
-  // read tensor
-  std::vector<int64_t> dims_vec;
-  std::copy(
-      desc.dims().begin(), desc.dims().end(), std::back_inserter(dims_vec));
-  lite::DDim dims(dims_vec);
-  tensor->Resize(dims);
-  void *buf;
-  size_t size = tensor->dims().production() * SizeOfType(desc.data_type());
-  // alllocate memory
-  switch (static_cast<int>(desc.data_type())) {
-#define SET_TENSOR(desc, type, precision) \
-  case Type::VarType_Type_##desc:         \
-    buf = tensor->mutable_data<type>();   \
-    tensor->set_precision(precision);     \
-    break
-
-    // SET_TENSOR(BOOL, bool, PRECISION(kBool));
-    SET_TENSOR(FP32, float, PRECISION(kFloat));
-    SET_TENSOR(INT8, int8_t, PRECISION(kInt8));
-    SET_TENSOR(INT16, int16_t, PRECISION(kInt16));
-    SET_TENSOR(INT32, int32_t, PRECISION(kInt32));
-    SET_TENSOR(INT64, int64_t, PRECISION(kInt64));
-#undef SET_TENSOR
-    default:
-      LOG(FATAL) << "unknown type " << desc.data_type();
-  }
-  tensor->set_persistable(true);
-
-  is.read(static_cast<char *>(buf), size);
-}
-
-void LoadLoDTensor(std::istream &is, Variable *var) {
+void LoadLoDTensor(model_parser::LoDTensorDeserializer *loader,
+                   model_parser::ByteReader *reader,
+                   Variable *var) {
   auto *tensor = var->GetMutable<lite::Tensor>();
-  uint32_t version{};
-  is.read(reinterpret_cast<char *>(&version), sizeof(version));
-  VLOG(3) << "model version " << version;
-
-  // Load LoD information
-  uint64_t lod_level{};
-  is.read(reinterpret_cast<char *>(&lod_level), sizeof(lod_level));
-  auto &lod = *tensor->mutable_lod();
-  lod.resize(lod_level);
-  for (uint64_t i = 0; i < lod_level; ++i) {
-    uint64_t size;
-    is.read(reinterpret_cast<char *>(&size), sizeof(size));
-    std::vector<uint64_t> tmp(size / sizeof(uint64_t));
-    is.read(reinterpret_cast<char *>(tmp.data()),
-            static_cast<std::streamsize>(size));
-    lod[i] = tmp;
-  }
-
-  TensorFromStream(is, tensor);
-}
-
-void ReadBinaryFile(const std::string &filename, std::string *contents) {
-  std::ifstream fin(filename, std::ios::in | std::ios::binary);
-  CHECK(fin.is_open()) << "Cannot open file: " << filename;
-  fin.seekg(0, std::ios::end);
-  auto size = fin.tellg();
-  contents->clear();
-  contents->resize(size);
-  fin.seekg(0, std::ios::beg);
-  fin.read(&(contents->at(0)), contents->size());
-  fin.close();
+  CHECK(tensor) << "Can not get allocation of the tensor.";
+  CHECK(loader) << "The input argument loader is nullptr.";
+  CHECK(var) << "The input argument var is nullptr.";
+  loader->LoadWithForwardReader(tensor, reader);
 }
 
 std::unique_ptr<framework::proto::ProgramDesc> LoadProgram(
-    const std::string &path, bool program_from_memory) {
+    const std::string &path, const lite_api::CxxModelBuffer &model_buffer) {
   std::unique_ptr<framework::proto::ProgramDesc> main_program(
       new framework::proto::ProgramDesc);
-  if (!program_from_memory) {
-    std::string desc_str;
-    ReadBinaryFile(path, &desc_str);
-    main_program->ParseFromString(desc_str);
+  if (model_buffer.is_empty()) {
+    model_parser::BinaryFileReader file(path);
+    main_program->ParseFromString(file.ReadForwardToString(file.length()));
   } else {
-    main_program->ParseFromString(path);
+    main_program->ParseFromString(model_buffer.get_program());
   }
   return main_program;
 }
 
-void LoadParams(const std::string &path) {}
-
 // Load directly to CPU, and latter transfer to other devices.
 void LoadParam(const std::string &path, Variable *out) {
-  std::ifstream fin(path, std::ios::binary);
-  CHECK(fin.is_open()) << "failed to open file " << path;
-  LoadLoDTensor(fin, out);
+  model_parser::BinaryFileReader reader(path);
+  model_parser::LoDTensorDeserializer loader;
+  LoadLoDTensor(&loader, &reader, out);
 }
 
 bool IsPersistable(const cpp::VarDesc &var) {
@@ -172,9 +83,9 @@ bool IsPersistable(const cpp::VarDesc &var) {
 void LoadCombinedParamsPb(const std::string &path,
                           lite::Scope *scope,
                           const cpp::ProgramDesc &cpp_prog,
-                          bool params_from_memory) {
-  CHECK(scope);
-  auto prog = cpp_prog;
+                          const lite_api::CxxModelBuffer &model_buffer) {
+  CHECK(scope) << "The input argument scope is nullptr.";
+  auto &prog = cpp_prog;
   auto &main_block_desc = *prog.GetBlock<cpp::BlockDesc>(0);
 
   // Get vars
@@ -184,30 +95,22 @@ void LoadCombinedParamsPb(const std::string &path,
     if (!IsPersistable(var)) continue;
     paramlist.push_back(var.Name());
   }
-  std::sort(paramlist.begin(), paramlist.end());
+  std::stable_sort(paramlist.begin(), paramlist.end());
 
-  // Load vars
-  auto load_var_func = [&](std::istream &is) {
-    for (size_t i = 0; i < paramlist.size(); ++i) {
-      auto *var = scope->Var(paramlist[i]);
-      // Error checking
-      CHECK(static_cast<bool>(is))
-          << "There is a problem with loading model parameters";
-      LoadLoDTensor(is, var);
-    }
-    is.peek();
-    CHECK(is.eof()) << "You are not allowed to load partial data via"
-                    << " LoadCombinedParamsPb, use LoadParam instead.";
-  };
-
-  if (params_from_memory) {
-    std::stringstream fin(path, std::ios::in | std::ios::binary);
-    load_var_func(fin);
+  std::unique_ptr<model_parser::ByteReader> reader;
+  if (!model_buffer.is_empty()) {
+    reader.reset(new model_parser::StringBufferReader(
+        const_cast<std::string &&>(model_buffer.get_params())));
   } else {
-    std::ifstream fin(path, std::ios::binary);
-    CHECK(fin.is_open());
-    load_var_func(fin);
+    reader.reset(new model_parser::BinaryFileReader(path));
   }
+  model_parser::LoDTensorDeserializer loader;
+  for (size_t i = 0; i < paramlist.size(); ++i) {
+    auto *var = scope->Var(paramlist[i]);
+    LoadLoDTensor(&loader, reader.get(), var);
+  }
+  CHECK(reader->ReachEnd()) << "You are not allowed to load partial data via"
+                            << " LoadCombinedParamsPb, use LoadParam instead.";
 }
 
 void LoadModelPb(const std::string &model_dir,
@@ -216,9 +119,9 @@ void LoadModelPb(const std::string &model_dir,
                  Scope *scope,
                  cpp::ProgramDesc *cpp_prog,
                  bool combined,
-                 bool model_from_memory) {
-  CHECK(cpp_prog);
-  CHECK(scope);
+                 const lite_api::CxxModelBuffer &model_buffer) {
+  CHECK(cpp_prog) << "The input cpp program pointer var is nullptr.";
+  CHECK(scope) << "The input scope var is nullptr.";
   cpp_prog->ClearBlocks();
 
   // Load model
@@ -228,7 +131,7 @@ void LoadModelPb(const std::string &model_dir,
     prog_path = model_file;
   }
   framework::proto::ProgramDesc pb_proto_prog =
-      *LoadProgram(prog_path, model_from_memory);
+      *LoadProgram(prog_path, model_buffer);
   pb::ProgramDesc pb_prog(&pb_proto_prog);
   // Transform to cpp::ProgramDesc
   TransformProgramDescAnyToCpp(pb_prog, cpp_prog);
@@ -236,12 +139,12 @@ void LoadModelPb(const std::string &model_dir,
   // Load Params
   // NOTE: Only main block be used now.
   VLOG(4) << "Start load model params...";
-  CHECK(!(!combined && model_from_memory))
+  CHECK(!(!combined && !model_buffer.is_empty()))
       << "If you want use the model_from_memory,"
       << " you should load the combined model using cfg.set_model_buffer "
          "interface.";
   if (combined) {
-    LoadCombinedParamsPb(param_file, scope, *cpp_prog, model_from_memory);
+    LoadCombinedParamsPb(param_file, scope, *cpp_prog, model_buffer);
   } else {
     auto main_block = pb_proto_prog.blocks(0);
     for (auto &var : main_block.vars()) {
@@ -251,10 +154,12 @@ void LoadModelPb(const std::string &model_dir,
       std::string file_path = model_dir + "/" + var.name();
       VLOG(4) << "reading weight " << var.name();
 
-      std::ifstream file(file_path);
+      model_parser::BinaryFileReader reader(file_path);
+      model_parser::LoDTensorDeserializer loader;
+
       switch (var.type().type()) {
         case framework::proto::VarType_Type_LOD_TENSOR:
-          LoadLoDTensor(file, scope->Var(var.name()));
+          LoadLoDTensor(&loader, &reader, scope->Var(var.name()));
           break;
         default:
           CHECK(false) << "unknown weight type";
@@ -296,10 +201,16 @@ void SaveModelPb(const std::string &model_dir,
           !item.persistable())
         continue;
       const std::string path = model_dir + "/" + item.name();
-      std::ofstream var_ostream(path, std::ios::binary);
-      CHECK(var_ostream.is_open());
-      SerializeTensor(var_ostream, exec_scope, item.name());
-      var_ostream.close();
+
+      model_parser::BinaryFileWriter file(path);
+      model_parser::LoDTensorSerializer saver;
+      auto *var = exec_scope.FindVar(item.name());
+      const auto &tensor = var->Get<lite::Tensor>();
+      if (tensor.target() == TARGET(kCUDA)) {
+        LOG(FATAL) << "The storage of the device Tensor is to be implemented, "
+                      "please copy it to the Host Tensor temporarily.";
+      }
+      saver.SaveWithForwardWriter(tensor, &file);
     }
   }
   VLOG(4) << "Save protobuf model in '" << model_dir << "'' successfully";
@@ -308,7 +219,7 @@ void SaveModelPb(const std::string &model_dir,
 void SaveCombinedParamsPb(const std::string &path,
                           const lite::Scope &exec_scope,
                           const cpp::ProgramDesc &cpp_prog) {
-  auto prog = cpp_prog;
+  auto &prog = cpp_prog;
   auto &main_block_desc = *prog.GetBlock<cpp::BlockDesc>(0);
 
   // Get vars
@@ -318,103 +229,20 @@ void SaveCombinedParamsPb(const std::string &path,
     if (!IsPersistable(var)) continue;
     paramlist.push_back(var.Name());
   }
-  std::sort(paramlist.begin(), paramlist.end());
+  std::stable_sort(paramlist.begin(), paramlist.end());
 
-  // Load vars
-  std::ofstream file(path);
-  CHECK(file.is_open());
+  // Save vars
+  model_parser::BinaryFileWriter file(path);
+  model_parser::LoDTensorSerializer saver;
   for (size_t i = 0; i < paramlist.size(); ++i) {
-    SerializeTensor(file, exec_scope, paramlist[i]);
-  }
-  file.close();
-}
-
-void TensorToStream(std::ostream &os, const lite::Tensor &tensor) {
-  // the 1st field, uint32_t version
-  constexpr uint32_t version = 0;
-  os.write(reinterpret_cast<const char *>(&version), sizeof(version));
-
-  {
-    uint64_t size = tensor.lod().size();
-    // the 2st field, LoD information
-    // uint64_t lod_level
-    // uint64_t lod_level_1 size in byte.
-    // int*     lod_level_1 data
-    // ...
-    os.write(reinterpret_cast<const char *>(&size), sizeof(size));
-
-    for (auto &each : tensor.lod()) {
-      size = each.size() * sizeof(each.front());
-      os.write(reinterpret_cast<const char *>(&size), sizeof(size));
-      os.write(reinterpret_cast<const char *>(each.data()),
-               static_cast<std::streamsize>(size));
-    }
-  }
-
-  // There are two version fields in a LoDTensor.
-  os.write(reinterpret_cast<const char *>(&version), sizeof(version));
-
-  {  // the 2nd field, tensor description
-    // int32_t  size
-    // void*    protobuf message
-    framework::proto::VarType::TensorDesc desc;
-    // TODO(Superjomn) support other data types.
-    switch (tensor.precision()) {
-#define SET_DATA_TYPE(precision, type_desc) \
-  case precision:                           \
-    desc.set_data_type(type_desc);          \
-    break
-
-      SET_DATA_TYPE(PRECISION(kFloat), framework::proto::VarType_Type_FP32);
-      SET_DATA_TYPE(PRECISION(kInt8), framework::proto::VarType_Type_INT8);
-      SET_DATA_TYPE(PRECISION(kInt16), framework::proto::VarType_Type_INT16);
-      SET_DATA_TYPE(PRECISION(kInt32), framework::proto::VarType_Type_INT32);
-      SET_DATA_TYPE(PRECISION(kInt64), framework::proto::VarType_Type_INT64);
-#undef SET_DATA_TYPE
-      default:
-        LOG(FATAL) << "unknown precision type: "
-                   << PrecisionToStr(tensor.precision());
-    }
-    auto dims = tensor.dims();
-    auto *pb_dims = desc.mutable_dims();
-    pb_dims->Resize(static_cast<int>(dims.size()), 0);
-    auto dims_vec = dims.Vectorize();
-    std::copy(dims_vec.begin(), dims_vec.end(), pb_dims->begin());
-    int32_t size = desc.ByteSize();
-    os.write(reinterpret_cast<const char *>(&size), sizeof(size));
-    auto out = desc.SerializeAsString();
-    os.write(out.data(), size);
-  }
-  {  // the 3rd field, tensor data
-    uint64_t size = tensor.memory_size();
-    CHECK_LT(size, std::numeric_limits<std::streamsize>::max())
-        << "Index overflow when writing tensor";
-
-#ifdef LITE_WITH_CUDA
+    auto *var = exec_scope.FindVar(paramlist[i]);
+    const auto &tensor = var->Get<lite::Tensor>();
     if (tensor.target() == TARGET(kCUDA)) {
-      std::unique_ptr<char> tmp_buffer(new char[size]);
-      TargetWrapperCuda::MemcpySync(tmp_buffer.get(),
-                                    tensor.data<float>(),
-                                    tensor.data_size(),
-                                    IoDirection::DtoH);
-      os.write(static_cast<const char *>(tmp_buffer.get()),
-               static_cast<std::streamsize>(size));
-    } else  // NOLINT
-#endif      // LITE_WITH_CUDA
-    {
-      os.write(static_cast<const char *>(tensor.data<void>()),
-               static_cast<std::streamsize>(size));
+      LOG(FATAL) << "The storage of the device Tensor is to be implemented, "
+                    "please copy it to the Host Tensor temporarily.";
     }
+    saver.SaveWithForwardWriter(tensor, &file);
   }
-}
-
-void SerializeTensor(std::ostream &os,
-                     const lite::Scope &scope,
-                     const std::string &var_name) {
-  // Store all the persistable vars.
-  auto *var = scope.FindVar(var_name);
-  const auto &tensor = var->Get<lite::Tensor>();
-  TensorToStream(os, tensor);
 }
 
 /// For navie buffer
@@ -457,7 +285,7 @@ void SetParamInfoNaive(naive_buffer::ParamDesc *param_desc,
   }
   desc.SetDim(tensor.dims().Vectorize());
   uint64_t size = tensor.memory_size();
-  CHECK_LT(size, std::numeric_limits<std::streamsize>::max())
+  CHECK_LT(size, (std::numeric_limits<std::streamsize>::max)())
       << "Index overflow when writing tensor";
 
 #ifdef LITE_WITH_CUDA
@@ -524,53 +352,96 @@ void SaveCombinedParamsNaive(const std::string &path,
   naive_buffer::proto::CombinedParamsDesc pt_desc(&table);
   naive_buffer::CombinedParamsDesc desc(&pt_desc);
 
-  auto prog = cpp_prog;
+  auto &prog = cpp_prog;
   auto &main_block_desc = *prog.GetBlock<cpp::BlockDesc>(0);
+  // set unique_var_names to avoid saving shared params repeatedly
+  std::set<std::string> unique_var_names;
   for (size_t i = 0; i < main_block_desc.VarsSize(); ++i) {
     auto &var = *main_block_desc.GetVar<cpp::VarDesc>(i);
-    if (var.Name() == "feed" || var.Name() == "fetch" || !var.Persistable())
+    if (var.Name() == "feed" || var.Name() == "fetch" || !var.Persistable() ||
+        unique_var_names.count(var.Name()) > 0)
       continue;
     naive_buffer::ParamDesc param_desc(desc.AddParam());
     SetParamInfoNaive(&param_desc, exec_scope, var.Name());
+    unique_var_names.emplace(var.Name());
   }
 
   pt_desc.Save();
-  table.SaveToFile(path);
+  table.AppendToFile(path);
 }
 
-void SaveModelNaive(const std::string &model_dir,
-                    const Scope &exec_scope,
-                    const cpp::ProgramDesc &cpp_prog,
-                    bool combined) {
-  MkDirRecur(model_dir);
-  // Save program
-  const std::string prog_path = model_dir + "/__model__.nb";
-  naive_buffer::BinaryTable table;
-  naive_buffer::proto::ProgramDesc nb_proto_prog(&table);
-  naive_buffer::ProgramDesc nb_prog(&nb_proto_prog);
-  TransformProgramDescCppToAny(cpp_prog, &nb_prog);
-  nb_proto_prog.Save();
-  table.SaveToFile(prog_path);
-
-  // Save Params
-  // NOTE: Only main block be used now.
-  if (combined) {
-    const std::string combined_params_path = model_dir + "/param.nb";
-    SaveCombinedParamsNaive(combined_params_path, exec_scope, cpp_prog);
-  } else {
-    auto prog = cpp_prog;
-    auto &main_block_desc = *prog.GetBlock<cpp::BlockDesc>(0);
-    for (size_t i = 0; i < main_block_desc.VarsSize(); ++i) {
-      auto &var = *main_block_desc.GetVar<cpp::VarDesc>(i);
-      if (var.Name() == "feed" || var.Name() == "fetch" || !var.Persistable())
-        continue;
-      const std::string path = model_dir + "/" + var.Name() + ".nb";
-      SaveParamNaive(path, exec_scope, var.Name());
-    }
+////////////////////////////////////////////////////////////////////////////////////
+// Save model: meta_version = 1
+// Flatbuffer model + params
+////////////////////////////////////////////////////////////////////////////////////
+// Create a new file and write data into it.
+void WriteToFile(const std::string &filename,
+                 const void *src,
+                 size_t byte_size) {
+  CHECK(src);
+  FILE *file = fopen(filename.c_str(), "wb");
+  CHECK(file);
+  CHECK(fwrite(src, sizeof(char), byte_size, file) == byte_size);
+  fclose(file);
+}
+// Append data into an existed file.
+void AppendToFile(const std::string &filename,
+                  const void *src,
+                  size_t byte_size) {
+  CHECK(src);
+  FILE *fp = fopen(filename.c_str(), "ab");
+  CHECK(fp) << "Unable to open file: " << filename;
+  if (fwrite(reinterpret_cast<const char *>(src), 1, byte_size, fp) !=
+      byte_size) {
+    fclose(fp);
+    LOG(FATAL) << "Write file error: " << filename;
   }
-  VLOG(4) << "Save naive buffer model in '" << model_dir << "'' successfully";
+  fclose(fp);
 }
-#endif
+/* ---------- Flatbuffers ---------- */
+void SaveModelNaive(const std::string &model_file,
+                    const Scope &exec_scope,
+                    const cpp::ProgramDesc &cpp_prog) {
+  /* 1. Save model to model.fbs */
+  const std::string prog_path = model_file + ".nb";
+  // Save meta_version(uint16) into file
+  uint16_t meta_version = 1;
+  WriteToFile(prog_path, &meta_version, sizeof(uint16_t));
+
+  // Save lite_version(char[16]) into file
+  const int paddle_version_length = 16 * sizeof(char);
+  std::string paddle_version = version();
+  AppendToFile(prog_path, paddle_version.c_str(), paddle_version_length);
+  VLOG(4) << "paddle_version:" << paddle_version;
+
+  fbs::ProgramDesc fbs_prog;
+  TransformProgramDescCppToAny(cpp_prog, &fbs_prog);
+  uint64_t topology_size = (fbs_prog.data()).size();
+  AppendToFile(prog_path, &topology_size, sizeof(uint64_t));
+  /* 1. Save model to model.fbs */
+  AppendToFile(prog_path, (fbs_prog.data()).data(), topology_size);
+  VLOG(4) << "save topology_size:" << topology_size;
+
+  /* 2. Get param names from cpp::ProgramDesc */
+  auto &main_block_desc = *cpp_prog.GetBlock<cpp::BlockDesc>(0);
+  // set unique_var_names to avoid saving shared params repeatedly
+  std::set<std::string> unique_var_names;
+  for (size_t i = 0; i < main_block_desc.VarsSize(); ++i) {
+    auto &var = *main_block_desc.GetVar<cpp::VarDesc>(i);
+    if (var.Name() == "feed" || var.Name() == "fetch" || !var.Persistable() ||
+        unique_var_names.count(var.Name()) > 0)
+      continue;
+    unique_var_names.emplace(var.Name());
+  }
+
+  /* 3. Save combined params to params.fbs */
+  fbs::CombinedParamsDesc params_prog;
+  fbs::SetCombinedParamsWithScope(exec_scope, unique_var_names, &params_prog);
+  auto data_cache = params_prog.data();
+  AppendToFile(prog_path, data_cache.data(), data_cache.size());
+
+  LOG(INFO) << "Save naive buffer model in '" << prog_path << " successfully";
+}
 
 template <typename T>
 void SetTensorDataNaive(T *out, size_t size, const std::vector<T> &src) {
@@ -612,7 +483,9 @@ void GetParamInfoNaive(const naive_buffer::ParamDesc &desc,
     break
 
     // SET_TENSOR(BOOL, bool, PRECISION(kBool));
+    SET_TENSOR(FP64, double, PRECISION(kFP64));
     SET_TENSOR(FP32, float, PRECISION(kFloat));
+    SET_TENSOR(UINT8, uint8_t, PRECISION(kUInt8));
     SET_TENSOR(INT8, int8_t, PRECISION(kInt8));
     SET_TENSOR(INT16, int16_t, PRECISION(kInt16));
     SET_TENSOR(INT32, int32_t, PRECISION(kInt32));
@@ -637,14 +510,15 @@ void LoadParamNaive(const std::string &path,
 }
 
 void LoadCombinedParamsNaive(const std::string &path,
+                             const uint64_t &offset,
                              lite::Scope *scope,
                              const cpp::ProgramDesc &cpp_prog,
                              bool params_from_memory) {
   naive_buffer::BinaryTable table;
   if (params_from_memory) {
-    table.LoadFromMemory(path.c_str(), path.length());
+    table.LoadFromMemory(path.c_str() + offset, path.length() - offset);
   } else {
-    table.LoadFromFile(path);
+    table.LoadFromFile(path, offset, 0);
   }
   naive_buffer::proto::CombinedParamsDesc pt_desc(&table);
   pt_desc.Load();
@@ -658,7 +532,7 @@ void LoadCombinedParamsNaive(const std::string &path,
   }
 
   // Check all params loaded
-  auto prog = cpp_prog;
+  auto &prog = cpp_prog;
   auto &main_block_desc = *prog.GetBlock<cpp::BlockDesc>(0);
   for (size_t i = 0; i < main_block_desc.VarsSize(); ++i) {
     auto &var = *main_block_desc.GetVar<cpp::VarDesc>(i);
@@ -669,6 +543,10 @@ void LoadCombinedParamsNaive(const std::string &path,
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/* Old Method of loading and saving model, before V2.3.0                     */
+/* Warning: this is an old inference and will be abandened in release/v3.0.0 */
+///////////////////////////////////////////////////////////////////////////////
 void LoadModelNaive(const std::string &model_dir,
                     Scope *scope,
                     cpp::ProgramDesc *cpp_prog,
@@ -677,6 +555,13 @@ void LoadModelNaive(const std::string &model_dir,
   CHECK(scope);
   cpp_prog->ClearBlocks();
 
+  LOG(WARNING)
+      << "WARNING: MobileConfig::set_model_dir and "
+         "MobileConfig::set_model_buffer are deprecated APIs "
+         "and will be removed in latter release. \n"
+         "    MobileConfig::set_model_from_file(const std::string& model_file)"
+         " and MobileConfig::set_model_from_buffer(const std::string& "
+         "model_buffer) are recommended.";
   // Load model
   const std::string prog_path = model_dir + "/__model__.nb";
   naive_buffer::BinaryTable table;
@@ -692,7 +577,7 @@ void LoadModelNaive(const std::string &model_dir,
   // NOTE: Only main block be used now.
   if (combined) {
     const std::string combined_params_path = model_dir + "/param.nb";
-    LoadCombinedParamsNaive(combined_params_path, scope, *cpp_prog, false);
+    LoadCombinedParamsNaive(combined_params_path, 0, scope, *cpp_prog, false);
   } else {
     auto &prog = *cpp_prog;
     auto &main_block_desc = *prog.GetBlock<cpp::BlockDesc>(0);
@@ -726,7 +611,6 @@ void LoadModelNaiveFromMemory(const std::string &model_buffer,
   cpp_prog->ClearBlocks();
 
   // Load model
-
   naive_buffer::BinaryTable table;
   table.LoadFromMemory(model_buffer.c_str(), model_buffer.length());
 
@@ -738,9 +622,308 @@ void LoadModelNaiveFromMemory(const std::string &model_buffer,
   TransformProgramDescAnyToCpp(nb_prog, cpp_prog);
 
   // Load Params
+  LoadCombinedParamsNaive(param_buffer, 0, scope, *cpp_prog, true);
+
+  VLOG(4) << "Load model from naive buffer memory successfully";
+}
+#endif  // LITE_ON_TINY_PUBLISH
+//////////////////////////////////////////////////////////////////////
+
+// usage: LoadModelNaiveFromFile is used for loading model from file.
+template <typename T>
+void ReadModelDataFromFile(T *data,
+                           const std::string &prog_path,
+                           uint64_t *offset,
+                           const uint64_t &size) {
+  model_parser::Buffer prog_data =
+      lite::fbs::LoadFile(prog_path, *offset, size);
+  memcpy(data, prog_data.data(), size);
+  *offset = *offset + size;
+}
+/*
+ * Binary structure of naive_buffer model: model.nb
+ * ----------------------------------------------------------
+ * |       |    PART         |   Precision |   Length(byte) |
+ * |   1   |  meta_version   |   uint16_t  |       2        |
+ * |   2   |  opt_version    |   char[16]  |      16        |
+ * |   3   |  topo_size      |   uint64_t  |       8        |
+ * |   4   |  topo_data      |   char[]    | topo_size byte |
+ * |   5   |  param_data     |   char[]    |                |
+ * ----------------------------------------------------------
+ *  Meaning of each part:
+ *      meta_version: meata_version, 0 default.
+ *      opt_version:  lite_version of opt tool that transformed this model.
+ *      topo_size:    length of `topo_data`.
+ *      topo_data:    contains model's topology data.
+ *      param_data:   contains model's params data.
+*/
+
+void LoadModelNaiveFromFile(const std::string &filename,
+                            Scope *scope,
+                            cpp::ProgramDesc *cpp_prog) {
+  CHECK(cpp_prog);
+  CHECK(scope);
+  // ModelFile
+  const std::string prog_path = filename;
+
+  // Offset
+  uint64_t offset = 0;
+
+  // (1)get meta version
+  uint16_t meta_version;
+  ReadModelDataFromFile<uint16_t>(
+      &meta_version, prog_path, &offset, sizeof(uint16_t));
+  VLOG(4) << "Meta_version:" << meta_version;
+
+  switch (meta_version) {
+    case 0:
+#ifndef LITE_ON_TINY_PUBLISH
+      LoadModelNaiveV0FromFile(filename, scope, cpp_prog);
+#else
+      LOG(FATAL) << "Paddle-Lite v2.7 has upgraded the naive-buffer model "
+                    "format. Please use the OPT to generate a new model. "
+                    "Thanks!";
+#endif
+      break;
+    case 1:
+      LoadModelFbsFromFile(filename, scope, cpp_prog);
+      break;
+    default:
+      LOG(FATAL) << "The model format cannot be recognized. Please make sure "
+                    "you use the correct interface and model file.";
+      break;
+  }
+}
+#ifndef LITE_ON_TINY_PUBLISH
+void LoadModelNaiveV0FromFile(const std::string &filename,
+                              Scope *scope,
+                              cpp::ProgramDesc *cpp_prog) {
+  CHECK(cpp_prog);
+  CHECK(scope);
+  cpp_prog->ClearBlocks();
+  // ModelFile
+  const std::string prog_path = filename;
+
+  // Offset
+  uint64_t offset = 0;
+
+  // (1)get meta version
+  uint16_t meta_version;
+  ReadModelDataFromFile<uint16_t>(
+      &meta_version, prog_path, &offset, sizeof(uint16_t));
+  VLOG(4) << "Meta_version:" << meta_version;
+
+  // (2)get opt version
+  char opt_version[16];
+  const uint64_t opt_version_length = 16 * sizeof(char);
+  ReadModelDataFromFile<char>(
+      opt_version, prog_path, &offset, opt_version_length);
+  VLOG(4) << "Opt_version:" << static_cast<const char *>(opt_version);
+
+  // check version, opt's version should be consistent with current Paddle-Lite
+  // version.
+  const std::string paddle_version = version();
+  const std::string opt_version_str = opt_version;
+  if (paddle_version != opt_version_str) {
+    LOG(WARNING) << "warning: the version of opt that transformed this model "
+                    "is not consistent with current Paddle-Lite version."
+                    "\n      version of opt:"
+                 << static_cast<const char *>(opt_version)
+                 << "\n      version of current Paddle-Lite:" << paddle_version;
+  }
+
+  // (3)get topo_size
+  uint64_t topo_size;
+  ReadModelDataFromFile<uint64_t>(
+      &topo_size, prog_path, &offset, sizeof(uint64_t));
+
+  // (4)get topo data
+  naive_buffer::BinaryTable topo_table;
+  topo_table.LoadFromFile(prog_path, offset, topo_size);
+  offset = offset + topo_size;
+  // transform topo_data into cpp::ProgramDesc
+  naive_buffer::proto::ProgramDesc nb_proto_prog(&topo_table);
+  nb_proto_prog.Load();
+  naive_buffer::ProgramDesc nb_prog(&nb_proto_prog);
+  TransformProgramDescAnyToCpp(nb_prog, cpp_prog);
+
+  // (5)Load Params
+  LoadCombinedParamsNaive(prog_path, offset, scope, *cpp_prog, false);
+
+  VLOG(4) << "Load naive buffer model in '" << filename << "' successfully";
+}
+#endif  // LITE_ON_TINY_PUBLISH
+void LoadModelFbsFromFile(const std::string &filename,
+                          Scope *scope,
+                          cpp::ProgramDesc *cpp_prog) {
+  CHECK(cpp_prog);
+  CHECK(scope);
+  CHECK_EQ(cpp_prog->BlocksSize(), 0);
+  // Offset
+  uint64_t offset = sizeof(uint16_t);
+
+  // get opt version
+  char opt_version[16];
+  const uint64_t opt_version_length = 16 * sizeof(char);
+  ReadModelDataFromFile<char>(
+      opt_version, filename, &offset, opt_version_length);
+  VLOG(4) << "Opt_version:" << static_cast<const char *>(opt_version);
+  // check version, opt's version should be consistent with current Paddle-Lite
+  // version.
+  const std::string paddle_version = version();
+  const std::string opt_version_str = opt_version;
+  if (paddle_version != opt_version_str) {
+    LOG(WARNING) << "warning: the version of opt that transformed this model "
+                    "is not consistent with current Paddle-Lite version."
+                    "\n      version of opt:"
+                 << static_cast<const char *>(opt_version)
+                 << "\n      version of current Paddle-Lite:" << paddle_version;
+  }
+  // (3)get topo_size
+  uint64_t topo_size;
+  ReadModelDataFromFile<uint64_t>(
+      &topo_size, filename, &offset, sizeof(uint64_t));
+
+#ifdef LITE_ON_FLATBUFFERS_DESC_VIEW
+  cpp_prog->Init(fbs::LoadFile(filename, offset, topo_size));
+#elif LITE_ON_TINY_PUBLISH
+  LOG(FATAL) << "Since no data structure of Flatbuffers has been constructed, "
+                "the model cannot be loaded.";
+#else
+  fbs::ProgramDesc program(fbs::LoadFile(filename, offset, topo_size));
+  TransformProgramDescAnyToCpp(program, cpp_prog);
+#endif
+  offset = offset + topo_size;
+
+  /* 2. Load scope from params.fbs */
+  fbs::CombinedParamsDescView params(fbs::LoadFile(filename, offset));
+  fbs::SetScopeWithCombinedParams(scope, params);
+
+  VLOG(4) << "Load naive buffer model in '" << filename << "' successfully";
+}
+
+// usage: LoadModelNaiveFromMemory is used for loading naive model from memory
+template <typename T>
+void ReadModelDataFromBuffer(T *data,
+                             const std::string &model_buffer,
+                             uint64_t *offset,
+                             const uint64_t &size) {
+  memcpy(data, model_buffer.c_str() + *offset, size);
+  *offset = *offset + size;
+}
+
+void LoadModelNaiveFromMemory(const std::string &model_buffer,
+                              Scope *scope,
+                              cpp::ProgramDesc *cpp_prog) {
+  CHECK(cpp_prog);
+  CHECK(scope);
+  cpp_prog->ClearBlocks();
+
+  uint64_t offset = 0;
+  // (1)get meta version
+  uint16_t meta_version;
+  ReadModelDataFromBuffer<uint16_t>(
+      &meta_version, model_buffer, &offset, sizeof(uint16_t));
+  VLOG(4) << "Meta_version:" << meta_version;
+  switch (meta_version) {
+    case 0:
+#ifndef LITE_ON_TINY_PUBLISH
+      LoadModelNaiveV0FromMemory(model_buffer, scope, cpp_prog);
+#else
+      LOG(FATAL) << "Paddle-Lite v2.7 has upgraded the naive-buffer model "
+                    "format. Please use the OPT to generate a new model. "
+                    "Thanks!";
+#endif
+      break;
+    case 1:
+      LoadModelNaiveV1FromMemory(model_buffer, scope, cpp_prog);
+      break;
+    default:
+      LOG(FATAL) << "The model format cannot be recognized. Please make sure "
+                    "you use the correct interface and model file.";
+      break;
+  }
+}
+#ifndef LITE_ON_TINY_PUBLISH
+void LoadModelNaiveV0FromMemory(const std::string &model_buffer,
+                                Scope *scope,
+                                cpp::ProgramDesc *cpp_prog) {
+  // Offset
+  uint64_t offset = sizeof(uint16_t);
+
+  // (2)get opt version
+  char opt_version[16];
+  const uint64_t paddle_version_length = 16 * sizeof(char);
+  ReadModelDataFromBuffer<char>(
+      opt_version, model_buffer, &offset, paddle_version_length);
+  VLOG(4) << "Opt_version:" << static_cast<const char *>(opt_version);
+
+  // (3)get topo_size and topo_data
+  uint64_t topo_size;
+  ReadModelDataFromBuffer<uint64_t>(
+      &topo_size, model_buffer, &offset, sizeof(uint64_t));
+  naive_buffer::BinaryTable table;
+  table.LoadFromMemory(model_buffer.c_str() + offset, topo_size);
+  offset = offset + topo_size;
+
+  naive_buffer::proto::ProgramDesc nb_proto_prog(&table);
+  nb_proto_prog.Load();
+  naive_buffer::ProgramDesc nb_prog(&nb_proto_prog);
+
+  // Transform to cpp::ProgramDesc
+  TransformProgramDescAnyToCpp(nb_prog, cpp_prog);
+
+  // Load Params
   // NOTE: Only main block be used now.
   // only combined Params are supported in Loading Model from memory
-  LoadCombinedParamsNaive(param_buffer, scope, *cpp_prog, true);
+  LoadCombinedParamsNaive(model_buffer, offset, scope, *cpp_prog, true);
+
+  VLOG(4) << "Load model from naive buffer memory successfully";
+}
+#endif
+///////////////////////////////////////////////////////////////////
+// Meta_version=1
+///////////////////////////////////////////////////////////////////
+void LoadModelNaiveV1FromMemory(const std::string &model_buffer,
+                                Scope *scope,
+                                cpp::ProgramDesc *cpp_prog) {
+  // Offset
+  uint64_t offset = sizeof(uint16_t);
+
+  // (2)get opt version
+  char opt_version[16];
+  const uint64_t paddle_version_length = 16 * sizeof(char);
+  ReadModelDataFromBuffer<char>(
+      opt_version, model_buffer, &offset, paddle_version_length);
+  VLOG(4) << "Opt_version:" << static_cast<const char *>(opt_version);
+
+  // (3)get prog_size and prog_data
+  uint64_t prog_size;
+  ReadModelDataFromBuffer<uint64_t>(
+      &prog_size, model_buffer, &offset, sizeof(uint64_t));
+  VLOG(4) << "prog_size:" << prog_size;
+
+  model_parser::Buffer prog_data(prog_size);
+  memcpy(prog_data.data(), model_buffer.c_str() + offset, prog_size);
+#ifdef LITE_ON_FLATBUFFERS_DESC_VIEW
+  cpp_prog->Init(std::move(prog_data));
+#elif LITE_ON_TINY_PUBLISH
+  LOG(FATAL) << "Since no data structure of Flatbuffers has been constructed, "
+                "the model cannot be loaded.";
+#else
+  fbs::ProgramDesc program(prog_data);
+  TransformProgramDescAnyToCpp(program, cpp_prog);
+#endif
+  offset = offset + prog_size;
+  VLOG(4) << "param_size:" << model_buffer.length() - offset;
+
+  model_parser::Buffer params_data(model_buffer.length() - offset);
+  memcpy(params_data.data(),
+         model_buffer.c_str() + offset,
+         model_buffer.length() - offset);
+
+  fbs::CombinedParamsDescView params(std::move(params_data));
+  fbs::SetScopeWithCombinedParams(scope, params);
 
   VLOG(4) << "Load model from naive buffer memory successfully";
 }

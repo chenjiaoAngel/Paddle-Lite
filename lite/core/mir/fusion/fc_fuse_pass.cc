@@ -23,8 +23,21 @@ namespace lite {
 namespace mir {
 
 void FcFusePass::Apply(const std::unique_ptr<SSAGraph>& graph) {
-  fusion::FcFuser fuser;
+#if defined(LITE_WITH_X86) || defined(LITE_WITH_CUDA)
+#ifdef LITE_WITH_MLU
+  fusion::FcFuser fuser(false);
   fuser(graph.get());
+#else
+  fusion::FcFuser fuser(true);
+  fuser(graph.get());
+#endif
+#endif
+  fusion::FcFuser fuser2(false);
+  fuser2(graph.get());
+#ifdef LITE_WITH_FPGA
+  fusion::FcFuser fpga_fuser(true);
+  fpga_fuser(graph.get());
+#endif
 }
 
 }  // namespace mir
@@ -33,4 +46,9 @@ void FcFusePass::Apply(const std::unique_ptr<SSAGraph>& graph) {
 
 REGISTER_MIR_PASS(lite_fc_fuse_pass, paddle::lite::mir::FcFusePass)
     .BindTargets({TARGET(kAny)})
+    .ExcludeTargets({TARGET(kXPU)})
+#if (!defined(LITE_WITH_MLU) && !defined(LITE_WITH_HUAWEI_ASCEND_NPU))
+    .ExcludeTargets({TARGET(kX86)})
+#endif
+    .ExcludeTargets({TARGET(kBM)})
     .BindKernel("fc");

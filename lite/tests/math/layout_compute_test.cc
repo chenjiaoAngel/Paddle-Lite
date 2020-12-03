@@ -15,10 +15,17 @@
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 #include "lite/core/context.h"
+<<<<<<< HEAD
 #include "lite/operators/op_params.h"
 #include "lite/tests/utils/naive_math_impl.h"
 #include "lite/tests/utils/tensor_utils.h"
 #include "lite/tests/utils/timer.h"
+=======
+#include "lite/core/profile/timer.h"
+#include "lite/operators/op_params.h"
+#include "lite/tests/utils/naive_math_impl.h"
+#include "lite/tests/utils/tensor_utils.h"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
 #ifdef LITE_WITH_ARM
 #include "lite/kernels/arm/layout_compute.h"
@@ -47,7 +54,12 @@ DEFINE_bool(flag_nchw, true, "do nchw to nhwc");
 typedef paddle::lite::DDim DDim;
 typedef paddle::lite::Tensor Tensor;
 typedef paddle::lite::operators::LayoutParam LayoutParam;
+<<<<<<< HEAD
 using paddle::lite::Timer;
+=======
+
+using paddle::lite::profile::Timer;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
 #define IN(n, c, h, w)                                 \
   input_data[w + h * input_w + c * input_h * input_w + \
@@ -120,7 +132,10 @@ void test_layout_fp32_nchw(DDim dim_in,
 #ifdef LITE_WITH_ARM
   paddle::lite::DeviceInfo::Init();
 #endif
+<<<<<<< HEAD
 
+=======
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   LayoutParam param;
   param.x = new Tensor;
   const_cast<Tensor*>(param.x)->set_precision(PRECISION(kFloat));
@@ -130,7 +145,11 @@ void test_layout_fp32_nchw(DDim dim_in,
 
   for (auto& cls : power_mode) {
     for (auto& th : thread_num) {
+<<<<<<< HEAD
       paddle::lite::kernels::arm::NCHWToNHWCCompute layout;
+=======
+      paddle::lite::kernels::arm::NCHWToNHWCCompute<PRECISION(kFloat)> layout;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       DDim dim_out({dim_in[0], dim_in[2], dim_in[3], dim_in[1]});
 
       std::unique_ptr<paddle::lite::KernelContext> ctx1(
@@ -165,6 +184,7 @@ void test_layout_fp32_nchw(DDim dim_in,
       /// compute
       Timer t0;
       for (int i = 0; i < FLAGS_repeats; ++i) {
+<<<<<<< HEAD
         t0.start();
         layout.Run();
         t0.end();
@@ -176,6 +196,19 @@ void test_layout_fp32_nchw(DDim dim_in,
                 << ", total GOPS: " << 1e-9 * gops
                 << " GOPS, avg GOPs: " << 1e-6 * gops / t0.get_average_ms()
                 << " GOPs, max GOPs: " << 1e-6 * gops / t0.get_min_time();
+=======
+        t0.Start();
+        layout.Run();
+        t0.Stop();
+      }
+      double gops = 2.0 * dim_out.production();
+      LOG(INFO) << "layout fp32: input shape: " << dim_in << ", output shape"
+                << dim_out << ",running time, avg: " << t0.LapTimes().Avg()
+                << ", min time: " << t0.LapTimes().Min()
+                << ", total GOPS: " << 1e-9 * gops
+                << " GOPS, avg GOPs: " << 1e-6 * gops / t0.LapTimes().Avg()
+                << " GOPs, max GOPs: " << 1e-6 * gops / t0.LapTimes().Min();
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
       if (FLAGS_check_result) {
         double max_ratio = 0;
@@ -232,7 +265,11 @@ void test_layout_fp32_nhwc(DDim dim_in,
 
   for (auto& cls : power_mode) {
     for (auto& th : thread_num) {
+<<<<<<< HEAD
       paddle::lite::kernels::arm::NHWCToNCHWCompute layout;
+=======
+      paddle::lite::kernels::arm::NHWCToNCHWCompute<PRECISION(kFloat)> layout;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       // n h w c == n c h w
       DDim dim_out({dim_in[0], dim_in[3], dim_in[1], dim_in[2]});
 
@@ -268,6 +305,7 @@ void test_layout_fp32_nhwc(DDim dim_in,
       /// compute
       Timer t0;
       for (int i = 0; i < FLAGS_repeats; ++i) {
+<<<<<<< HEAD
         t0.start();
         layout.Run();
         t0.end();
@@ -279,6 +317,19 @@ void test_layout_fp32_nhwc(DDim dim_in,
                 << ", total GOPS: " << 1e-9 * gops
                 << " GOPS, avg GOPs: " << 1e-6 * gops / t0.get_average_ms()
                 << " GOPs, max GOPs: " << 1e-6 * gops / t0.get_min_time();
+=======
+        t0.Start();
+        layout.Run();
+        t0.Stop();
+      }
+      double gops = 2.0 * dim_out.production();
+      LOG(INFO) << "layout fp32: input shape: " << dim_in << ", output shape"
+                << dim_out << ",running time, avg: " << t0.LapTimes().Avg()
+                << ", min time: " << t0.LapTimes().Min()
+                << ", total GOPS: " << 1e-9 * gops
+                << " GOPS, avg GOPs: " << 1e-6 * gops / t0.LapTimes().Avg()
+                << " GOPs, max GOPs: " << 1e-6 * gops / t0.LapTimes().Min();
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
       if (FLAGS_check_result) {
         double max_ratio = 0;
@@ -335,7 +386,11 @@ void test_layout_int8_nchw(DDim dim_in,
 
   for (auto& cls : power_mode) {
     for (auto& th : thread_num) {
+<<<<<<< HEAD
       paddle::lite::kernels::arm::NCHWToNHWCComputeInt8 layout;
+=======
+      paddle::lite::kernels::arm::NCHWToNHWCCompute<PRECISION(kInt8)> layout;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       DDim dim_out({dim_in[0], dim_in[2], dim_in[3], dim_in[1]});
 
       std::unique_ptr<paddle::lite::KernelContext> ctx1(
@@ -370,18 +425,32 @@ void test_layout_int8_nchw(DDim dim_in,
       /// compute
       Timer t0;
       for (int i = 0; i < FLAGS_repeats; ++i) {
+<<<<<<< HEAD
         t0.start();
         layout.Run();
         t0.end();
+=======
+        t0.Start();
+        layout.Run();
+        t0.Stop();
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       }
       LOG(INFO) << "saber compute end";
       double gops = 2.0 * dim_out.production();
       LOG(INFO) << "layout int8: input shape: " << dim_in << ", output shape"
+<<<<<<< HEAD
                 << dim_out << ",running time, avg: " << t0.get_average_ms()
                 << ", min time: " << t0.get_min_time()
                 << ", total GOPS: " << 1e-9 * gops
                 << " GOPS, avg GOPs: " << 1e-6 * gops / t0.get_average_ms()
                 << " GOPs, max GOPs: " << 1e-6 * gops / t0.get_min_time();
+=======
+                << dim_out << ",running time, avg: " << t0.LapTimes().Avg()
+                << ", min time: " << t0.LapTimes().Min()
+                << ", total GOPS: " << 1e-9 * gops
+                << " GOPS, avg GOPs: " << 1e-6 * gops / t0.LapTimes().Avg()
+                << " GOPs, max GOPs: " << 1e-6 * gops / t0.LapTimes().Min();
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
       if (FLAGS_check_result) {
         double max_ratio = 0;
@@ -438,7 +507,11 @@ void test_layout_int8_nhwc(DDim dim_in,
 
   for (auto& cls : power_mode) {
     for (auto& th : thread_num) {
+<<<<<<< HEAD
       paddle::lite::kernels::arm::NHWCToNCHWComputeInt8 layout;
+=======
+      paddle::lite::kernels::arm::NHWCToNCHWCompute<PRECISION(kInt8)> layout;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       // n h w c == n c h w
       DDim dim_out({dim_in[0], dim_in[3], dim_in[1], dim_in[2]});
 
@@ -474,18 +547,32 @@ void test_layout_int8_nhwc(DDim dim_in,
       /// compute
       Timer t0;
       for (int i = 0; i < FLAGS_repeats; ++i) {
+<<<<<<< HEAD
         t0.start();
         layout.Run();
         t0.end();
+=======
+        t0.Start();
+        layout.Run();
+        t0.Stop();
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       }
       LOG(INFO) << "run";
       double gops = 2.0 * dim_out.production();
       LOG(INFO) << "layout int8: input shape: " << dim_in << ", output shape"
+<<<<<<< HEAD
                 << dim_out << ",running time, avg: " << t0.get_average_ms()
                 << ", min time: " << t0.get_min_time()
                 << ", total GOPS: " << 1e-9 * gops
                 << " GOPS, avg GOPs: " << 1e-6 * gops / t0.get_average_ms()
                 << " GOPs, max GOPs: " << 1e-6 * gops / t0.get_min_time();
+=======
+                << dim_out << ",running time, avg: " << t0.LapTimes().Avg()
+                << ", min time: " << t0.LapTimes().Min()
+                << ", total GOPS: " << 1e-9 * gops
+                << " GOPS, avg GOPs: " << 1e-6 * gops / t0.LapTimes().Avg()
+                << " GOPs, max GOPs: " << 1e-6 * gops / t0.LapTimes().Min();
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
       if (FLAGS_check_result) {
         double max_ratio = 0;

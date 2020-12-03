@@ -191,9 +191,25 @@ class RegisterLiteKernelParser(SyntaxParser):
 
         self.kernels = []
 
-    def parse(self):
+    def parse(self, with_extra):
         find_registry_command = False
-
+        extra_command = []
+        # Get the code location of extra kernels registry
+        # extra kernels registries are surrounded by
+        # "#ifdef LITE_BUILD_EXTRA" and "#endif // LITE_BUILD_EXTRA"
+        while self.cur_pos < len(self.str):
+            start = self.str.find("#ifdef LITE_BUILD_EXTRA", self.cur_pos)
+            if start != -1:
+               self.cur_pos = start
+               end = self.str.find("#endif  // LITE_BUILD_EXTRA", self.cur_pos)
+               if end != -1:
+                   extra_command += extra_command + list(range(start, end + 1))
+                   self.cur_pos = end + len("#endif  // LITE_BUILD_EXTRA") -1
+               else:
+                   break
+            else:
+                break
+        self.cur_pos = 0
         while self.cur_pos < len(self.str):
             start = self.str.find(self.KEYWORD, self.cur_pos)
             if start != -1:
@@ -203,6 +219,10 @@ class RegisterLiteKernelParser(SyntaxParser):
                     skip commented code
                     '''
                     self.cur_pos = start + 1
+                    continue
+                # if with_extra == "OFF", extra kernels will not be parsed
+                if with_extra != "ON" and start in extra_command:
+                    self.cur_pos = start + len(self.KEYWORD) -1
                     continue
                 self.cur_pos = start
                 k = KernelRegistry()
@@ -292,7 +312,7 @@ class RegisterLiteKernelParser(SyntaxParser):
             self.eat_point()
             self.eat_spaces()
             self.eat_word()
-            assert self.token in ('BindInput', 'BindOutput', 'SetVersion', 'Finalize')
+            assert self.token in ('BindInput', 'BindOutput', 'SetVersion', 'BindPaddleOpVersion', 'Finalize')
             io = IO()
 
             if self.token == 'BindInput':
@@ -305,6 +325,16 @@ class RegisterLiteKernelParser(SyntaxParser):
                 self.eat_left_parentheses()
                 self.eat_str()
                 self.version = self.token
+                self.eat_right_parentheses()
+                self.eat_spaces()
+            # skip `BindPaddleOpVersion` command during parsing kernel registry 
+            elif self.token == 'BindPaddleOpVersion':
+                # eg BindPaddleOpVersion("fill_constant", 1)
+                self.eat_left_parentheses()
+                self.eat_str()
+                self.eat_comma()
+                self.eat_spaces()
+                self.eat_word()
                 self.eat_right_parentheses()
                 self.eat_spaces()
             else:

@@ -15,10 +15,38 @@
 #include "lite/utils/cv/image_rotate.h"
 #include <math.h>
 #include <string.h>
+<<<<<<< HEAD
+=======
+#include "lite/utils/cv/bgr_rotate.h"
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 namespace paddle {
 namespace lite {
 namespace utils {
 namespace cv {
+<<<<<<< HEAD
+=======
+void ImageRotate::choose(const uint8_t* src,
+                         uint8_t* dst,
+                         ImageFormat srcFormat,
+                         int srcw,
+                         int srch,
+                         float degree) {
+  if (degree != 90 && degree != 180 && degree != 270) {
+    printf("this degree: %f not support \n", degree);
+  }
+  if (srcFormat == GRAY) {
+    rotate_hwc1(src, dst, srcw, srch, degree);
+  } else if (srcFormat == BGR || srcFormat == RGB) {
+    // rotate_hwc3(src, dst, srcw, srch, degree);
+    bgr_rotate_hwc(src, dst, srcw, srch, static_cast<int>(degree));
+  } else if (srcFormat == BGRA || srcFormat == RGBA) {
+    rotate_hwc4(src, dst, srcw, srch, degree);
+  } else {
+    printf("this srcFormat: %d does not support! \n", srcFormat);
+    return;
+  }
+}
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 // gray
 void rotate_hwc1_90(
     const uint8_t* src, uint8_t* dst, int w_in, int h_in, int w_out, int h_out);
@@ -50,6 +78,7 @@ void rotate_hwc1(
     rotate_hwc1_180(src, dst, srcw, srch, srcw, srch);
   } else if (degree == 270) {
     rotate_hwc1_270(src, dst, srcw, srch, srch, srcw);
+<<<<<<< HEAD
   }
 }
 void rotate_hwc2(
@@ -62,6 +91,13 @@ void rotate_hwc2(
   //     rotate_hwc2_270(src, dst, srcw, srch, srch, srcw);
   // }
 }
+=======
+  } else {
+    printf("this degree: %f does not support! \n", degree);
+    return;
+  }
+}
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
 void rotate_hwc3(
     const uint8_t* src, uint8_t* dst, int srcw, int srch, float degree) {
@@ -71,6 +107,12 @@ void rotate_hwc3(
     rotate_hwc3_180(src, dst, srcw, srch, srcw, srch);
   } else if (degree == 270) {
     rotate_hwc3_270(src, dst, srcw, srch, srch, srcw);
+<<<<<<< HEAD
+=======
+  } else {
+    printf("this degree: %f does not support! \n", degree);
+    return;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   }
 }
 
@@ -82,6 +124,12 @@ void rotate_hwc4(
     rotate_hwc4_180(src, dst, srcw, srch, srcw, srch);
   } else if (degree == 270) {
     rotate_hwc4_270(src, dst, srcw, srch, srch, srcw);
+<<<<<<< HEAD
+=======
+  } else {
+    printf("this degree: %f does not support! \n", degree);
+    return;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   }
 }
 #ifdef __aarch64__
@@ -395,8 +443,13 @@ void rotate_hwc4(
   "sub %[inptr2], %[inptr2], %[stride_h_w] \n"                                 \
   "sub %[inptr3], %[inptr3], %[stride_h_w] \n"                                 \
                                                                                \
+<<<<<<< HEAD
   "vtrn.16 d1, d5    @ trans data: \n" /* d0=40 50 60 70 04 14 24 34 */        \
   "vtrn.16  d9, d13  @ trans data:\n"  /* d4=41 51 61 71 05 15 25 35 */        \
+=======
+  "vtrn.16 d1, d9    @ trans data: \n" /* d0=40 50 60 70 04 14 24 34 */        \
+  "vtrn.16 d5, d13  @ trans data:\n"   /* d4=41 51 61 71 05 15 25 35 */        \
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
                                                                                \
   "vtrn.32 d0, d1                  @ trans data: \n"                           \
   "vtrn.32  d8, d9                  @ trans data: \n"                          \
@@ -582,12 +635,20 @@ void rotate_hwc1_90(const uint8_t* src,
                     int h_in,
                     int w_out,
                     int h_out) {
+<<<<<<< HEAD
   uint8_t zerobuff[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+=======
+  uint8_t* zerobuff = new uint8_t[8];
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   // block 4*8. -- 8*4
   int i = 0;
   int stride_h = 4 * w_in;
   int stride_h_w = 4 * w_in - 8;
   int stride_out = 4 * w_out;
+<<<<<<< HEAD
+=======
+  int ww = w_out - 8;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 #pragma omp parallel for
   for (i = 0; i < h_in - 7; i += 8) {
     const uint8_t* inptr0 = src + i * w_in;
@@ -596,7 +657,11 @@ void rotate_hwc1_90(const uint8_t* src,
     const uint8_t* inptr3 = inptr2 + w_in;
     int j = 0;
     for (; j < w_in - 7; j += 8) {
+<<<<<<< HEAD
       uint8_t* outptr0 = dst + j * w_out + i;
+=======
+      uint8_t* outptr0 = dst + j * w_out + (ww - i);
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
       uint8_t* outptr1 = outptr0 + w_out;
       uint8_t* outptr2 = outptr1 + w_out;
       uint8_t* outptr3 = outptr2 + w_out;
@@ -658,6 +723,7 @@ void rotate_hwc1_90(const uint8_t* src,
     const uint8_t* inptr6 = inptr5 + w_in;
     const uint8_t* inptr7 = inptr6 + w_in;
     for (; j < w_in; j++) {
+<<<<<<< HEAD
       uint8_t* outptr = dst + j * w_out + i;
       *outptr++ = *inptr0++;
       *outptr++ = *inptr1++;
@@ -676,6 +742,28 @@ void rotate_hwc1_90(const uint8_t* src,
       *outptr0 = *inptr0++;
     }
   }
+=======
+      uint8_t* outptr = dst + j * w_out + ww - i;
+      *outptr++ = *inptr7++;
+      *outptr++ = *inptr6++;
+      *outptr++ = *inptr5++;
+      *outptr++ = *inptr4++;
+      *outptr++ = *inptr3++;
+      *outptr++ = *inptr2++;
+      *outptr++ = *inptr1++;
+      *outptr++ = *inptr0++;
+    }
+  }
+  ww = w_out - 1;
+  for (; i < h_in; i++) {
+    const uint8_t* inptr0 = src + i * w_in;
+    for (int j = 0; j < w_in; j++) {
+      uint8_t* outptr0 = dst + j * w_out + ww - i;
+      *outptr0 = *inptr0++;
+    }
+  }
+  delete[] zerobuff;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 /*
 1 2 3 4
@@ -692,7 +780,11 @@ void rotate_hwc1_180(const uint8_t* src,
                      int h_in,
                      int w_out,
                      int h_out) {
+<<<<<<< HEAD
   uint8_t zerobuff[10000];
+=======
+  uint8_t* zerobuff = new uint8_t[w_in];
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   memset(zerobuff, 0, w_in * sizeof(uint8_t));
   int stride_w = 8;
 #pragma omp parallel for
@@ -703,9 +795,15 @@ void rotate_hwc1_180(const uint8_t* src,
     const uint8_t* inptr3 = inptr2 + w_in;
 
     uint8_t* outptr0 = dst + (h_in - i) * w_out - stride_w;  // last
+<<<<<<< HEAD
     uint8_t* outptr1 = outptr0 + w_out;
     uint8_t* outptr2 = outptr1 + w_out;
     uint8_t* outptr3 = outptr2 + w_out;
+=======
+    uint8_t* outptr1 = outptr0 - w_out;
+    uint8_t* outptr2 = outptr1 - w_out;
+    uint8_t* outptr3 = outptr2 - w_out;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 
     if (i + 3 >= h_in) {
       uint8_t* ptr = zerobuff + w_in - stride_w;
@@ -835,6 +933,10 @@ void rotate_hwc1_180(const uint8_t* src,
       }
     }
   }
+<<<<<<< HEAD
+=======
+  delete[] zerobuff;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 /*
 1 2 3
@@ -961,7 +1063,11 @@ void rotate_hwc3_90(const uint8_t* src,
   int stride_h_w = 4 * win - 24;
   int stride_out = 4 * wout;
   int ww = w_out - 8;
+<<<<<<< HEAD
   uint8_t zerobuff[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+=======
+  uint8_t* zerobuff = new uint8_t[8];
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   // block 4*8. -- 8*4
   int i = 0;
 #pragma omp parallel for
@@ -1112,6 +1218,10 @@ void rotate_hwc3_90(const uint8_t* src,
       *outptr0++ = *inptr0++;
     }
   }
+<<<<<<< HEAD
+=======
+  delete[] zerobuff;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 
 void rotate_hwc3_180(const uint8_t* src,
@@ -1121,7 +1231,11 @@ void rotate_hwc3_180(const uint8_t* src,
                      int w_out,
                      int h_out) {
   int win = w_in * 3;
+<<<<<<< HEAD
   uint8_t zerobuff[30000];
+=======
+  uint8_t* zerobuff = new uint8_t[win];
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   memset(zerobuff, 0, win * sizeof(uint8_t));
   int stride_w = 24;
 #pragma omp parallel for
@@ -1365,6 +1479,11 @@ void rotate_hwc3_180(const uint8_t* src,
       }
     }
   }
+<<<<<<< HEAD
+=======
+  delete[] zerobuff;
+  delete[] zerobuff;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 
 void rotate_hwc3_270(const uint8_t* src,
@@ -1619,7 +1738,11 @@ void rotate_hwc4_180(const uint8_t* src,
                      int w_out,
                      int h_out) {
   int win = w_in * 4;
+<<<<<<< HEAD
   uint8_t zerobuff[40000];
+=======
+  uint8_t* zerobuff = new uint8_t[win];
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
   memset(zerobuff, 0, win * sizeof(uint8_t));
   int stride_w = 32;
 #pragma omp parallel for
@@ -1894,6 +2017,10 @@ void rotate_hwc4_180(const uint8_t* src,
       }
     }
   }
+<<<<<<< HEAD
+=======
+  delete[] zerobuff;
+>>>>>>> d5b08275c46b2517790d170a469006246f59b6bf
 }
 
 void rotate_hwc4_270(const uint8_t* src,

@@ -17,7 +17,7 @@
 #include <memory>
 #include <vector>
 #include "lite/backends/x86/jit/registry.h"
-#include "lite/utils/paddle_enforce.h"
+#include "lite/utils/cp_logging.h"
 
 namespace paddle {
 namespace lite {
@@ -113,9 +113,9 @@ class SgdCreator : public JitCodeCreator<sgd_attr_t> {
   }
   std::unique_ptr<GenBase> CreateJitCode(
       const sgd_attr_t& attr) const override {
-    PADDLE_ENFORCE_EQ(attr.param_width, attr.grad_width);
-    PADDLE_ENFORCE_LE(attr.selected_rows_size, attr.grad_height);
-    PADDLE_ENFORCE_GE(attr.selected_rows_size, 0);
+    CHECK_EQ(attr.param_width, attr.grad_width);
+    CHECK_LE(attr.selected_rows_size, attr.grad_height);
+    CHECK_GE(attr.selected_rows_size, 0);
     return make_unique<SgdJitCode>(attr, CodeSize(attr));
   }
 };
@@ -127,4 +127,4 @@ class SgdCreator : public JitCodeCreator<sgd_attr_t> {
 
 namespace gen = paddle::lite::jit::gen;
 
-REGISTER_JITKERNEL_GEN(kSgd, gen::SgdCreator);
+REGISTER_JITKERNEL_GEN_LITE(kSgd, gen::SgdCreator);

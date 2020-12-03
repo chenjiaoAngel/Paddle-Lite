@@ -20,12 +20,14 @@
 #include "lite/backends/arm/math/funcs.h"
 #endif  // LITE_WITH_ARM
 #include "lite/core/context.h"
+#include "lite/core/profile/timer.h"
 #include "lite/core/tensor.h"
+#include "lite/operators/op_params.h"
 #include "lite/tests/utils/tensor_utils.h"
-#include "lite/tests/utils/timer.h"
 
 typedef paddle::lite::Tensor Tensor;
-using paddle::lite::Timer;
+typedef paddle::lite::operators::ActivationParam ActivationParam;
+using paddle::lite::profile::Timer;
 
 DEFINE_int32(power_mode,
              3,
@@ -37,7 +39,15 @@ DEFINE_int32(power_mode,
 DEFINE_int32(threads, 1, "threads num");
 DEFINE_int32(warmup, 0, "warmup times");
 DEFINE_int32(repeats, 1, "repeats times");
+
+#ifdef LITE_WITH_ARM
+// sgemm_test wiil not be operated except that it's
+// on arm backend.
+DEFINE_bool(basic_test, true, "do all tests");
+#else
 DEFINE_bool(basic_test, false, "do all tests");
+#endif
+
 DEFINE_bool(check_result, true, "check the result");
 
 DEFINE_int32(M, 512, "gemm: M");
@@ -110,13 +120,13 @@ bool test_sgemm(bool tra,
   memcpy(dc_basic, dc, sizeof(float) * m * ldc);
   memcpy(dc_backup, dc, sizeof(float) * m * ldc);
 
-  LOG(INFO) << "sgemm M: " << m << ", N: " << n << ", K: " << k
-            << ", strides, lda: " << lda << ", ldb: " << ldb << ", ldc: " << ldc
-            << ", alpha: " << alpha << ", beta: " << beta
-            << ", transA: " << (tra ? "true" : "false")
-            << ", transB: " << (trb ? "true" : "false")
-            << ", relu: " << (has_relu ? "true" : "false")
-            << ", bias: " << (has_bias ? "true" : "false");
+  VLOG(4) << "sgemm M: " << m << ", N: " << n << ", K: " << k
+          << ", strides, lda: " << lda << ", ldb: " << ldb << ", ldc: " << ldc
+          << ", alpha: " << alpha << ", beta: " << beta
+          << ", transA: " << (tra ? "true" : "false")
+          << ", transB: " << (trb ? "true" : "false")
+          << ", relu: " << (has_relu ? "true" : "false")
+          << ", bias: " << (has_bias ? "true" : "false");
   if (FLAGS_check_result) {
     basic_gemm(tra,
                trb,
@@ -136,6 +146,12 @@ bool test_sgemm(bool tra,
                has_relu);
   }
   Timer t0;
+  ActivationParam act_param;
+  if (has_relu) {
+    act_param.has_active = true;
+    act_param.active_type =
+        (paddle::lite_api::ActivationType)1;  // 2-relu6 4-leakyrelu
+  }
 #ifdef LITE_WITH_ARM
   //! compute
   double ops = 2.0 * m * n * k;
@@ -163,7 +179,7 @@ bool test_sgemm(bool tra,
                                            ldc,
                                            dbias,
                                            has_bias,
-                                           has_relu,
+                                           act_param,
                                            &ctx);
   }
 
@@ -171,7 +187,7 @@ bool test_sgemm(bool tra,
     if (i == FLAGS_repeats - 1) {
       memcpy(dc, dc_backup, sizeof(float) * m * ldc);
     }
-    t0.start();
+    t0.Start();
     paddle::lite::arm::math::sgemm_prepack(trb,
                                            m,
                                            n,
@@ -184,17 +200,17 @@ bool test_sgemm(bool tra,
                                            ldc,
                                            dbias,
                                            has_bias,
-                                           has_relu,
+                                           act_param,
                                            &ctx);
-    t0.end();
+    t0.Stop();
   }
   LOG(INFO) << "M: " << m << ", N: " << n << ", K: " << k
             << ", power_mode: " << cls << ", threads: " << ths
             << ", GOPS: " << ops * 1e-9f
-            << " GOPS, avg time: " << t0.get_average_ms()
-            << " ms, min time: " << t0.get_min_time()
-            << " ms, mean GOPs: " << ops * 1e-6f / t0.get_average_ms()
-            << " GOPs, max GOPs: " << ops * 1e-6f / t0.get_min_time()
+            << " GOPS, avg time: " << t0.LapTimes().Avg()
+            << " ms, min time: " << t0.LapTimes().Min()
+            << " ms, mean GOPs: " << ops * 1e-6f / t0.LapTimes().Avg()
+            << " GOPs, max GOPs: " << ops * 1e-6f / t0.LapTimes().Min()
             << " GOPs";
 
   if (FLAGS_check_result) {
@@ -268,7 +284,7 @@ TEST(TestSgemm, test_func_sgemm_prepacked) {
                                                  FLAGS_power_mode,
                                                  th);
                           if (flag) {
-                            LOG(INFO)
+                            VLOG(4)
                                 << "test m = " << m << ", n=" << n
                                 << ", k=" << k
                                 << ", bias: " << (has_bias ? "true" : "false")

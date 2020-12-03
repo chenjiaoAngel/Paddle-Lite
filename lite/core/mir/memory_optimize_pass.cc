@@ -28,63 +28,141 @@ typedef struct {
   std::string name;
   int cluster;
   std::pair<int, int> lifetime;
-  std::unordered_set<std::string> adj;
+  std::set<std::string> adj;
 } MemNode;
 
 void MemoryOptimizePass::CollectLifeCycleByDevice(
-    std::unordered_map<std::string, lifecycle_map_t>* lifecycles,
-    SSAGraph* graph) {
+    std::map<std::string, lifecycle_map_t>* lifecycles, SSAGraph* graph) {
   max_lifecycle_ = 0;
 
   auto is_host = [](TargetType x) -> bool {
     return x == TARGET(kHost) || x == TARGET(kX86) || x == TARGET(kARM);
   };
-  // The vars which inputs or outputs are invalid op will not be reused.
-  auto valid_var = [&](Node* node) -> bool {
-    std::set<std::string> invalid_op = {"while",
-                                        "conditional_block",
-                                        "conditional_block_infer",
-                                        "merge_lod_tensor_infer",
-                                        "merge_lod_tensor",
-                                        "equal",
-                                        "lod_reset",
-                                        "concat",
-                                        "yolo_box",
-                                        "graph_op",
-                                        "feed",
-                                        "fetch"};
-    for (auto* tmp : node->inlinks) {
-      CHECK(tmp->IsStmt());
-      std::string op_type = tmp->AsStmt().op_info()->Type();
-      if (std::find(invalid_op.begin(), invalid_op.end(), op_type) !=
-          invalid_op.end()) {
-        return false;
+
+  auto has_x86_opencl = [&]() -> bool {
+    bool has_x86{false};
+    bool has_opencl{false};
+    for (auto& op_node : graph->StmtTopologicalOrder()) {
+      if (!op_node->IsStmt()) continue;
+      TargetType op_target_type = op_node->AsStmt().place().target;
+      if (has_opencl && has_x86) {
+        return true;
+      }
+      if (op_target_type == TARGET(kOpenCL)) {
+        has_opencl = true;
+      }
+      if (op_target_type == TARGET(kX86)) {
+        has_x86 = true;
       }
     }
-    for (auto* tmp : node->outlinks) {
-      CHECK(tmp->IsStmt());
-      std::string op_type = tmp->AsStmt().op_info()->Type();
-      if (std::find(invalid_op.begin(), invalid_op.end(), op_type) !=
-          invalid_op.end()) {
-        return false;
-      }
-    }
-    return true;
+    return has_x86 && has_opencl;
   };
+
+  // The all of input and output variables of the Ops will not be reused.
+  std::set<std::string> invalid_op_nodes = {"while",
+                                            "conditional_block",
+                                            "conditional_block_infer",
+                                            "merge_lod_tensor_infer",
+                                            "merge_lod_tensor",
+                                            "equal",
+                                            "lod_reset",
+                                            "yolo_box",
+                                            "subgraph",
+                                            "feed",
+                                            "fetch"};
+
+  auto insert_invalid_op_nodes_for_specific_target = [&](
+      std::set<std::string> op_node_set, TargetType specific_target) {
+    std::set<std::string> invalid_op_nodes_opencl = {"layout", "fc"};
+    for (auto& op_node : graph->StmtTopologicalOrder()) {
+      if (!op_node->IsStmt()) continue;
+      TargetType op_target_type = op_node->AsStmt().place().target;
+      if (op_target_type == specific_target &&
+          specific_target == TARGET(kOpenCL)) {
+        invalid_op_nodes.insert(invalid_op_nodes_opencl.begin(),
+                                invalid_op_nodes_opencl.end());
+        break;
+      }
+      // else if // you can add more targets
+    }
+  };
+
+  if (has_x86_opencl()) {
+    LOG(INFO) << "skip x86 opencl target for reuse memory pass";
+    return;
+  }
+
+  VLOG(4) << "invalid_op_nodes.size();" << invalid_op_nodes.size();
+  insert_invalid_op_nodes_for_specific_target(invalid_op_nodes,
+                                              TARGET(kOpenCL));
+  VLOG(4) << "invalid_op_nodes.size();" << invalid_op_nodes.size();
+
+  // Collect the invalid input and output variables that will not be reused.
+  std::set<std::string> invalid_var_names;
+  for (auto& op_node : graph->StmtTopologicalOrder()) {
+    // variables of invalid_op_nodes wil not be reused
+    if (!op_node->IsStmt()) continue;
+    auto op_info = op_node->AsStmt().op_info();
+    auto op_type = op_info->Type();
+    auto invalid_op_node = invalid_op_nodes.find(op_type);
+    if (invalid_op_node != invalid_op_nodes.end()) {
+      for (auto in_var_node : op_node->inlinks) {
+        CHECK(in_var_node->IsArg());
+        invalid_var_names.insert(in_var_node->AsArg().name);
+      }
+      for (auto out_var_node : op_node->outlinks) {
+        CHECK(out_var_node->IsArg());
+        invalid_var_names.insert(out_var_node->AsArg().name);
+      }
+      continue;
+    }
+    // The specified input and output variables of the Ops whose 'inplace' attr
+    // is true will not be reused, such as reshape/reshape2's X and Out
+    // variables
+    std::map<std::string,
+             std::pair<std::set<std::string>, std::set<std::string>>>
+        inplace_op_nodes = {{"reshape", {{"X"}, {"Out"}}},
+                            {"reshape2", {{"X"}, {"Out"}}}};
+    auto inplace_op_node = inplace_op_nodes.find(op_type);
+    if (inplace_op_node != inplace_op_nodes.end()) {
+      bool inplace = false;
+      if (op_info->HasAttr("inplace")) {
+        inplace = op_info->GetAttr<bool>("inplace");
+      }
+      if (inplace) {
+        for (auto& in_param_name : inplace_op_node->second.first) {
+          const auto& in_arg_names = op_info->Input(in_param_name);
+          invalid_var_names.insert(in_arg_names.begin(), in_arg_names.end());
+        }
+        for (auto& out_param_name : inplace_op_node->second.second) {
+          const auto& out_arg_names = op_info->Output(out_param_name);
+          invalid_var_names.insert(out_arg_names.begin(), out_arg_names.end());
+        }
+      }
+    }
+  }
+
+  // non-tensor(like tensor_array) variables will not be reused
+  for (auto& node : graph->nodes()) {
+    if (node.IsArg() && (node.arg()->type != nullptr) &&
+        !node.arg()->type->IsTensor()) {
+      invalid_var_names.insert(node.arg()->name);
+    }
+  }
 
   for (auto& op_node : graph->StmtTopologicalOrder()) {
     if (op_node->IsStmt()) {
-      auto inputs = op_node->inlinks;
-      auto outputs = op_node->outlinks;
-      std::vector<Node*> requires(inputs.begin(), inputs.end());
-      requires.insert(requires.end(), outputs.begin(), outputs.end());
-      for (Node* node : requires) {
-        CHECK(node->IsArg());
-        auto& arg = node->AsArg();
+      std::vector<Node*> var_nodes(op_node->inlinks.begin(),
+                                   op_node->inlinks.end());
+      var_nodes.insert(
+          var_nodes.end(), op_node->outlinks.begin(), op_node->outlinks.end());
+      for (auto* var_node : var_nodes) {
+        CHECK(var_node->IsArg());
+        auto& arg = var_node->AsArg();
         if (arg.is_weight || arg.is_persist) continue;
-        if (!valid_var(node)) continue;
         std::string var_name = arg.name;
-        TargetType target_type = node->AsArg().type->target();
+        if (invalid_var_names.count(var_name)) continue;
+        TargetType target_type = arg.type->target();
         if (is_host(target_type)) target_type = TARGET(kHost);
 
         if (!(*lifecycles)[TargetToStr(target_type)].count(var_name)) {
@@ -94,7 +172,7 @@ void MemoryOptimizePass::CollectLifeCycleByDevice(
           int cur_life =
               (*lifecycles)[TargetToStr(target_type)][var_name].second;
           (*lifecycles)[TargetToStr(target_type)][var_name].second =
-              std::max(max_lifecycle_, cur_life);
+              (std::max)(max_lifecycle_, cur_life);
         }
       }
       ++max_lifecycle_;
@@ -105,7 +183,7 @@ void MemoryOptimizePass::CollectLifeCycleByDevice(
 
 void MemoryOptimizePass::MakeReusePlan(
     const lifecycle_map_t& lifecycles,
-    std::unordered_map<std::string, std::string>* node2cluster) {
+    std::map<std::string, std::string>* node2cluster) {
   std::vector<MemNode> mem_nodes;
   std::vector<std::string> cluster;
   for (auto& data : lifecycles) {
@@ -136,7 +214,7 @@ void MemoryOptimizePass::MakeReusePlan(
     mem_nodes[i].cluster = cluster_index;
     (*node2cluster)[mem_nodes[i].name] = mem_nodes[i].name;
     cluster.push_back(mem_nodes[i].name);
-    std::unordered_set<std::string> cluster_adj = mem_nodes[i].adj;
+    std::set<std::string> cluster_adj = mem_nodes[i].adj;
     for (size_t j = i + 1; j < mem_nodes.size(); j++) {
       if (mem_nodes[j].cluster < 0 &&
           (cluster_adj.find(mem_nodes[j].name) == cluster_adj.end())) {
@@ -154,14 +232,13 @@ void MemoryOptimizePass::MakeReusePlan(
 }
 
 void MemoryOptimizePass::PerformReusePlan(
-    SSAGraph* graph,
-    const std::unordered_map<std::string, std::string>& reuse_table) {
+    SSAGraph* graph, const std::map<std::string, std::string>& reuse_table) {
   int node_append_idx = 0;
   for (auto& op_node : graph->StmtTopologicalOrder()) {
     if (!op_node->IsStmt()) continue;
     auto& stmt = op_node->AsStmt();
     auto* op_info = stmt.mutable_op_info();
-    std::unordered_map<std::string, std::vector<std::string>> in_args, out_args;
+    std::map<std::string, std::vector<std::string>> in_args, out_args;
     // replace the op's input according the reuse table.
     for (auto argument : op_info->inputs()) {
       for (const auto& x : argument.second) {
@@ -181,7 +258,7 @@ void MemoryOptimizePass::PerformReusePlan(
       if (reuse_table.count(name) && reuse_table.at(name) != name) {
         auto replace_name = reuse_table.at(name);
         input_node->AsArg().name =
-            replace_name + "(" + std::to_string(node_append_idx) + ")";
+            replace_name + "(" + paddle::lite::to_string(node_append_idx) + ")";
         node_append_idx++;
       }
     }
@@ -205,7 +282,7 @@ void MemoryOptimizePass::PerformReusePlan(
       if (reuse_table.count(name) && reuse_table.at(name) != name) {
         auto replace_name = reuse_table.at(name);
         out_node->AsArg().name =
-            replace_name + "(" + std::to_string(node_append_idx) + ")";
+            replace_name + "(" + paddle::lite::to_string(node_append_idx) + ")";
         node_append_idx++;
       }
     }
@@ -241,10 +318,10 @@ void MemoryOptimizePass::Apply(const std::unique_ptr<SSAGraph>& graph) {
   // name of var and the value in the table represents the current name of var.
   // 3. Perform reuse plan: Replace all var's name in the model according to the
   // mapping table.
-  std::unordered_map<std::string, lifecycle_map_t> lifecycles;
+  std::map<std::string, lifecycle_map_t> lifecycles;
   CollectLifeCycleByDevice(&lifecycles, graph.get());
   for (auto& ele : lifecycles) {
-    std::unordered_map<std::string, std::string> node2cluster;
+    std::map<std::string, std::string> node2cluster;
     MakeReusePlan(ele.second, &node2cluster);
     PerformReusePlan(graph.get(), node2cluster);
   }
@@ -255,4 +332,12 @@ void MemoryOptimizePass::Apply(const std::unique_ptr<SSAGraph>& graph) {
 }  // namespace paddle
 
 REGISTER_MIR_PASS(memory_optimize_pass, paddle::lite::mir::MemoryOptimizePass)
-    .BindTargets({TARGET(kARM)});
+    .BindTargets({TARGET(kARM), TARGET(kOpenCL)})
+    .ExcludeTargets({TARGET(kNPU),
+                     TARGET(kXPU),
+                     TARGET(kBM),
+                     TARGET(kRKNPU),
+                     TARGET(kAPU),
+                     TARGET(kMLU),
+                     TARGET(kHuaweiAscendNPU),
+                     TARGET(kImaginationNNA)});

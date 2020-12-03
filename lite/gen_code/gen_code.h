@@ -20,9 +20,9 @@
 #include "lite/core/program.h"
 #include "lite/core/target_wrapper.h"
 #include "lite/core/tensor.h"
+#include "lite/model_parser/base/apis.h"
 #include "lite/model_parser/compatible_pb.h"
-#include "lite/model_parser/cpp/op_desc.h"
-#include "lite/model_parser/desc_apis.h"
+#include "lite/model_parser/cpp_desc.h"
 #include "lite/model_parser/pb/op_desc.h"
 #include "lite/utils/all.h"
 
@@ -153,16 +153,16 @@ class Module {
 
  private:
   std::string WeightUniqueName() const {
-    return "w_" + std::to_string(weight_counter_++);
+    return "w_" + paddle::lite::to_string(weight_counter_++);
   }
   std::string TmpVarUniqueName() const {
-    return "tmp_" + std::to_string(tmp_var_counter_++);
+    return "tmp_" + paddle::lite::to_string(tmp_var_counter_++);
   }
   std::string OpUniqueName() const {
-    return "op_" + std::to_string(op_counter_++);
+    return "op_" + paddle::lite::to_string(op_counter_++);
   }
   std::string KernelUniqueName() const {
-    return "kernel_" + std::to_string(kernel_counter_++);
+    return "kernel_" + paddle::lite::to_string(kernel_counter_++);
   }
 
   std::string DataRepr(const std::string &raw_data, PrecisionType dtype);

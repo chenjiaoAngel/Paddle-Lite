@@ -42,25 +42,10 @@ bool TransposeOp::CheckShape() const {
   return true;
 }
 
-bool TransposeOp::InferShape() const {
-  CHECK_OR_FALSE(param_.x);
-  CHECK_OR_FALSE(param_.output);
+bool TransposeOp::InferShapeImpl() const {
   auto x_dims = param_.x->dims();
-  auto x_rank = x_dims.size();
   std::vector<int> axis = param_.axis;
   size_t axis_size = axis.size();
-  // "The input tensor's rank(%d) should be equal to the axis's size(%d)",
-  // x_rank, axis_size
-  CHECK_OR_FALSE(x_rank == axis_size);
-
-  std::vector<int> count(axis_size, 0);
-  for (size_t i = 0; i < axis_size; i++) {
-    // Each element of Attribute axis should be a unique value
-    // range from 0 to (dims - 1),
-    // where the dims is the axis's size
-    CHECK_OR_FALSE(axis[i] < static_cast<int>(axis_size) &&
-                   ++count[axis[i]] == 1);
-  }
   lite::DDim out_dims(x_dims);
   for (size_t i = 0; i < axis_size; i++) {
     out_dims[i] = x_dims[axis[i]];
@@ -70,6 +55,7 @@ bool TransposeOp::InferShape() const {
 }
 
 bool TransposeOp::AttachImpl(const cpp::OpDesc &op_desc, lite::Scope *scope) {
+  AttachParam(&param_);
   auto x = op_desc.Input("X").front();
   auto out = op_desc.Output("Out").front();
 
@@ -98,7 +84,7 @@ bool Transpose2Op::CheckShape() const {
   size_t axis_size = axis.size();
   // "The input tensor's rank(%d) should be equal to the axis's size(%d)",
   // x_rank, axis_size
-  CHECK_OR_FALSE(x_rank == axis_size);
+  CHECK_EQ(x_rank, axis_size);
 
   std::vector<int> count(axis_size, 0);
   for (size_t i = 0; i < axis_size; i++) {
@@ -111,30 +97,24 @@ bool Transpose2Op::CheckShape() const {
   return true;
 }
 
-bool Transpose2Op::InferShape() const {
-  CHECK_OR_FALSE(param_.x);
-  CHECK_OR_FALSE(param_.output);
+bool Transpose2Op::InferShapeImpl() const {
   auto x_dims = param_.x->dims();
-  auto x_rank = x_dims.size();
   std::vector<int> axis = param_.axis;
   size_t axis_size = axis.size();
-  // "The input tensor's rank(%d) should be equal to the axis's size(%d)",
-  // x_rank, axis_size
-  CHECK_OR_FALSE(x_rank == axis_size);
-
-  std::vector<int> count(axis_size, 0);
-  for (size_t i = 0; i < axis_size; i++) {
-    // Each element of Attribute axis should be a unique value
-    // range from 0 to (dims - 1),
-    // where the dims is the axis's size
-    CHECK_OR_FALSE(axis[i] < static_cast<int>(axis_size) &&
-                   ++count[axis[i]] == 1);
-  }
   lite::DDim out_dims(x_dims);
   for (size_t i = 0; i < axis_size; i++) {
     out_dims[i] = x_dims[axis[i]];
   }
   param_.output->Resize(out_dims);
+
+  std::vector<DDim::value_type> xshape_dims(x_dims.size() + 1, 0);
+  for (size_t i = 0; i < x_dims.size(); i++) {
+    xshape_dims[i + 1] = x_dims[i];
+  }
+  param_.xshape->Resize(xshape_dims);
+  auto xshape_lod = param_.xshape->mutable_lod();
+  *xshape_lod = param_.x->lod();
+
   return true;
 }
 

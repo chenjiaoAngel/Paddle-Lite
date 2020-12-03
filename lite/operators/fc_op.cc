@@ -27,51 +27,63 @@ bool FcOpLite::CheckShape() const {
 
   const auto input_dims = param_.input->dims();
   const auto w_dims = param_.w->dims();
+  CHECK_EQ_OR_FALSE(w_dims.size(), 2UL);
 
+  int64_t w_dims_1 = param_.padding_weights ? w_dims[1] - 4 : w_dims[1];
   if (param_.bias) {
     const auto bias_dims = param_.bias->dims();
     if (bias_dims.size() == 2) {
       CHECK_EQ_OR_FALSE(bias_dims[0], 1);
-      CHECK_EQ_OR_FALSE(bias_dims[1], w_dims[1]);
+      CHECK_EQ_OR_FALSE(bias_dims[1], w_dims_1);
     } else if (bias_dims.size() == 1) {
-      CHECK_EQ_OR_FALSE(bias_dims[0], w_dims[1]);
+      CHECK_EQ_OR_FALSE(bias_dims[0], w_dims_1);
     }
   }
 
-  CHECK_EQ_OR_FALSE(w_dims.size(), 2UL);
   CHECK_GT_OR_FALSE(input_dims.size(),
                     static_cast<size_t>(param_.in_num_col_dims));
-
   param_.in_mat_dims = input_dims.Flatten2D(param_.in_num_col_dims);
   // CHECK_EQ_OR_FALSE(param_.in_mat_dims[1], w_dims[0]);
 
   return true;
 }
 
-bool FcOpLite::InferShape() const {
-  const auto input_dims = param_.input->dims();
-  const auto w_dims = param_.w->dims();
+bool FcOpLite::InferShapeImpl() const {
+  const auto& input_dims = param_.input->dims();
+  int64_t w_dims_1;
+  if (param_.w_dims.empty()) {
+    const auto& w_dims = param_.w->dims();
+    w_dims_1 = param_.padding_weights ? w_dims[1] - 4 : w_dims[1];
+  } else {
+    const auto& w_dims = param_.w_dims;
+    w_dims_1 = param_.padding_weights ? w_dims[1] - 4 : w_dims[1];
+  }
+  int in_num_col_dims = param_.in_num_col_dims;
 
   // Set output dims
-  std::vector<int64_t> output_dims(param_.in_num_col_dims + 1, 0);
-  for (int i = 0; i < param_.in_num_col_dims; ++i) {
+  std::vector<DDim::value_type> output_dims(in_num_col_dims + 1);
+  for (int i = 0; i < in_num_col_dims; ++i) {
     output_dims[i] = input_dims[i];
   }
-  output_dims.back() = w_dims[1];
-  param_.output->Resize(lite::DDim(output_dims));
+  output_dims[in_num_col_dims] = w_dims_1;
+  param_.output->Resize(output_dims);
 
   // share LoD
-  // param_.output->set_lod(param_.input->lod());
+  param_.output->set_lod(param_.input->lod());
+
   return true;
 }
 
-bool FcOpLite::AttachImpl(const cpp::OpDesc &op_desc, lite::Scope *scope) {
+bool FcOpLite::AttachImpl(const cpp::OpDesc& op_desc, lite::Scope* scope) {
+  AttachParam(&param_);
+
   auto input = op_desc.Input("Input").front();
   auto W = op_desc.Input("W").front();
   auto out = op_desc.Output("Out").front();
 
   param_.input = scope->FindVar(input)->GetMutable<lite::Tensor>();
   param_.w = scope->FindVar(W)->GetMutable<lite::Tensor>();
+  param_.w_dims = param_.w->dims();
   std::vector<std::string> input_arg_names = op_desc.InputArgumentNames();
   if (std::find(input_arg_names.begin(), input_arg_names.end(), "Bias") !=
       input_arg_names.end()) {
@@ -90,16 +102,25 @@ bool FcOpLite::AttachImpl(const cpp::OpDesc &op_desc, lite::Scope *scope) {
   if (op_desc.HasAttr("activation_type")) {
     param_.activation_type = op_desc.GetAttr<std::string>("activation_type");
   }
+  if (op_desc.HasAttr("padding_weights")) {
+    param_.padding_weights = op_desc.GetAttr<bool>("padding_weights");
+  } else {
+    param_.padding_weights = false;
+  }
 
   // For Int8
-  if (op_desc.HasAttr("enable_int8")) {
-    param_.enable_int8 = op_desc.GetAttr<bool>("enable_int8");
-    if (op_desc.HasAttr("input_scale"))
-      param_.input_scale = op_desc.GetAttr<float>("input_scale");
-    if (op_desc.HasAttr("weight_scale"))
-      param_.weight_scale = op_desc.GetAttr<std::vector<float>>("weight_scale");
-    if (op_desc.HasAttr("output_scale"))
-      param_.output_scale = op_desc.GetAttr<float>("output_scale");
+  const OpInfo* op_info = dynamic_cast<const OpInfo*>(&op_desc);
+  if (op_info != nullptr && op_info->HasAttr("enable_int8")) {
+    param_.enable_int8 = op_info->GetAttr<bool>("enable_int8");
+    auto input_scale_name = "Input0_scale";
+    auto weight_scale_name = "W0_scale";
+    auto out_scale_name = "Out0_scale";
+    if (op_info->HasInputScale(input_scale_name, true))
+      param_.input_scale = op_info->GetInputScale(input_scale_name, true)[0];
+    if (op_info->HasInputScale(weight_scale_name, true))
+      param_.weight_scale = op_info->GetInputScale(weight_scale_name, true);
+    if (op_info->HasOutputScale(out_scale_name, true))
+      param_.output_scale = op_info->GetOutputScale(out_scale_name, true)[0];
   }
   return true;
 }
